@@ -1,8 +1,12 @@
+import time
+
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 from pwdlib import PasswordHash
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.config import Settings
 from app.repositories.user import UserRepository
 
 
@@ -103,3 +107,28 @@ def test_register_ignores_role_in_payload_and_creates_user_role(
     assert response.json()["role"] == "user"
     assert user is not None
     assert user.role == "user"
+
+
+def test_login_returns_bearer_token_with_user_claims(
+    client: TestClient, settings: Settings
+) -> None:
+    registered = client.post(
+        "/api/auth/register",
+        json={"email": "alice@example.com", "password": "s3cret-password"},
+    ).json()
+
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "alice@example.com", "password": "s3cret-password"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["token_type"] == "bearer"
+    assert body["user"] == {"id": registered["id"], "email": "alice@example.com", "role": "user"}
+
+    claims = jwt.decode(body["access_token"], settings.JWT_SECRET, algorithms=["HS256"])
+    assert claims["sub"] == str(registered["id"])
+    assert claims["role"] == "user"
+    expected_exp = time.time() + settings.JWT_EXPIRE_MINUTES * 60
+    assert abs(claims["exp"] - expected_exp) < 60
