@@ -132,3 +132,24 @@ def test_login_returns_bearer_token_with_user_claims(
     assert claims["role"] == "user"
     expected_exp = time.time() + settings.JWT_EXPIRE_MINUTES * 60
     assert abs(claims["exp"] - expected_exp) < 60
+
+
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        pytest.param({"email": "alice@example.com", "password": "wrong-password"}, id="wrong-password"),
+        pytest.param({"email": "nobody@example.com", "password": "s3cret-password"}, id="unknown-email"),
+    ],
+)
+def test_login_rejects_invalid_credentials_with_401_and_generic_detail(
+    client: TestClient, credentials: dict[str, str]
+) -> None:
+    client.post(
+        "/api/auth/register",
+        json={"email": "alice@example.com", "password": "s3cret-password"},
+    )
+
+    response = client.post("/api/auth/login", json=credentials)
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid email or password"}
