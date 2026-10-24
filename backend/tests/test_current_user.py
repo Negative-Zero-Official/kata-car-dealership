@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
@@ -10,7 +11,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import Settings
 from app.dependencies import get_current_user
 from app.models import User
-from app.repositories.user import UserRepository
 from app.schemas.auth import UserResponse
 
 protected = APIRouter()
@@ -27,24 +27,17 @@ def app(app: FastAPI) -> FastAPI:
     return app
 
 
-def register_and_login(client: TestClient) -> tuple[dict, str]:
-    credentials = {"email": "alice@example.com", "password": "s3cret-password"}
-    user = client.post("/api/auth/register", json=credentials).json()
-    token = client.post("/api/auth/login", json=credentials).json()["access_token"]
-    return user, token
+def test_protected_route_returns_current_user_for_valid_token(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
 
-
-def bearer(token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {token}"}
-
-
-def test_protected_route_returns_current_user_for_valid_token(client: TestClient) -> None:
-    user, token = register_and_login(client)
-
-    response = client.get("/api/test/me", headers=bearer(token))
+    response = client.get("/api/test/me", headers=auth_headers(user))
 
     assert response.status_code == 200
-    assert response.json() == {"id": user["id"], "email": "alice@example.com", "role": "user"}
+    assert response.json() == {"id": user.id, "email": "alice@example.com", "role": "user"}
 
 
 def test_protected_route_rejects_missing_header_with_401(client: TestClient) -> None:
@@ -54,51 +47,53 @@ def test_protected_route_rejects_missing_header_with_401(client: TestClient) -> 
 
 
 def test_protected_route_rejects_malformed_token_with_401(client: TestClient) -> None:
-    response = client.get("/api/test/me", headers=bearer("garbage"))
+    response = client.get("/api/test/me", headers={"Authorization": "Bearer garbage"})
 
     assert response.status_code == 401
 
 
 def test_protected_route_rejects_token_signed_with_another_secret_with_401(
-    client: TestClient, settings: Settings
+    client: TestClient, settings: Settings, make_user: Callable[..., User]
 ) -> None:
-    user, _ = register_and_login(client)
+    user = make_user()
     forged = jwt.encode(
-        {"sub": str(user["id"]), "role": "admin", "exp": datetime.now(UTC) + timedelta(minutes=5)},
+        {"sub": str(user.id), "role": "admin", "exp": datetime.now(UTC) + timedelta(minutes=5)},
         "another-secret-that-is-also-32-chars-long",
         algorithm=settings.JWT_ALGORITHM,
     )
 
-    response = client.get("/api/test/me", headers=bearer(forged))
+    response = client.get("/api/test/me", headers={"Authorization": f"Bearer {forged}"})
 
     assert response.status_code == 401
 
 
 def test_protected_route_rejects_expired_token_with_401(
-    client: TestClient, settings: Settings
+    client: TestClient, settings: Settings, make_user: Callable[..., User]
 ) -> None:
-    user, _ = register_and_login(client)
+    user = make_user()
     expired = jwt.encode(
-        {"sub": str(user["id"]), "role": "user", "exp": datetime.now(UTC) - timedelta(minutes=1)},
+        {"sub": str(user.id), "role": "user", "exp": datetime.now(UTC) - timedelta(minutes=1)},
         settings.JWT_SECRET,
         algorithm=settings.JWT_ALGORITHM,
     )
 
-    response = client.get("/api/test/me", headers=bearer(expired))
+    response = client.get("/api/test/me", headers={"Authorization": f"Bearer {expired}"})
 
     assert response.status_code == 401
 
 
 def test_protected_route_rejects_token_for_deleted_user_with_401(
-    client: TestClient, session_factory: sessionmaker[Session]
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
 ) -> None:
-    _, token = register_and_login(client)
+    user = make_user()
+    headers = auth_headers(user)
     with session_factory() as session:
-        user = UserRepository(session).get_by_email("alice@example.com")
-        assert user is not None
-        session.delete(user)
+        session.delete(session.get(User, user.id))
         session.commit()
 
-    response = client.get("/api/test/me", headers=bearer(token))
+    response = client.get("/api/test/me", headers=headers)
 
     assert response.status_code == 401

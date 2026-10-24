@@ -1,13 +1,12 @@
+from collections.abc import Callable
 from typing import Annotated
 
 import pytest
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session, sessionmaker
 
 from app.dependencies import require_admin
 from app.models import User
-from app.repositories.user import UserRepository
 from app.schemas.auth import UserResponse
 
 admin_only = APIRouter()
@@ -24,43 +23,26 @@ def app(app: FastAPI) -> FastAPI:
     return app
 
 
-def register_and_login(
-    client: TestClient,
-    session_factory: sessionmaker[Session],
-    email: str,
-    role: str = "user",
-) -> str:
-    credentials = {"email": email, "password": "s3cret-password"}
-    client.post("/api/auth/register", json=credentials)
-    if role != "user":
-        with session_factory() as session:
-            user = UserRepository(session).get_by_email(email)
-            assert user is not None
-            user.role = role
-            session.commit()
-    return client.post("/api/auth/login", json=credentials).json()["access_token"]
-
-
-def bearer(token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {token}"}
-
-
 def test_admin_route_rejects_regular_user_with_403(
-    client: TestClient, session_factory: sessionmaker[Session]
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
 ) -> None:
-    token = register_and_login(client, session_factory, "alice@example.com")
+    user = make_user(email="alice@example.com")
 
-    response = client.get("/api/test/admin", headers=bearer(token))
+    response = client.get("/api/test/admin", headers=auth_headers(user))
 
     assert response.status_code == 403
 
 
 def test_admin_route_allows_admin(
-    client: TestClient, session_factory: sessionmaker[Session]
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
 ) -> None:
-    token = register_and_login(client, session_factory, "root@example.com", role="admin")
+    admin = make_user(email="root@example.com", role="admin")
 
-    response = client.get("/api/test/admin", headers=bearer(token))
+    response = client.get("/api/test/admin", headers=auth_headers(admin))
 
     assert response.status_code == 200
     assert response.json()["role"] == "admin"
