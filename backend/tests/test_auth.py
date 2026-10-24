@@ -32,3 +32,40 @@ def test_register_stores_password_as_verifiable_hash(client: TestClient, session
     assert user is not None
     assert user.hashed_password != password
     assert PasswordHash.recommended().verify(password, user.hashed_password)
+
+def test_register_rejects_duplicate_email_with_409(client: TestClient) -> None:
+    payload = {"email": "alice@example.com", "password": "s3cret-password"}
+    client.post("/api/auth/register", json=payload)
+
+    response = client.post("/api/auth/register", json=payload)
+
+    assert response.status_code == 409
+
+
+def test_register_rejects_email_differing_only_in_case_with_409(client: TestClient) -> None:
+    client.post(
+        "/api/auth/register",
+        json={"email": "alice@x.com", "password": "s3cret-password"},
+    )
+
+    response = client.post(
+        "/api/auth/register",
+        json={"email": "Alice@X.com", "password": "s3cret-password"},
+    )
+
+    assert response.status_code == 409
+
+
+def test_register_stores_email_lowercase(
+    client: TestClient, session_factory: sessionmaker[Session]
+) -> None:
+    response = client.post(
+        "/api/auth/register",
+        json={"email": "Alice@X.com", "password": "s3cret-password"},
+    )
+
+    with session_factory() as session:
+        user = UserRepository(session).get_by_email("alice@x.com")
+
+    assert response.json()["email"] == "alice@x.com"
+    assert user is not None
