@@ -12,3 +12,7 @@ class InvalidCredentials(DomainError):
 
 class InvalidToken(DomainError):
     detail = "Invalid or expired token"
+
+
+class AdminRequired(DomainError):
+    detail = "Admin role required"
