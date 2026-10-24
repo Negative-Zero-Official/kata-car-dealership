@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import jwt
 
+from app.domain.errors import InvalidToken
 from app.models import User
 
 
@@ -18,3 +19,10 @@ class TokenService:
             "exp": datetime.now(UTC) + timedelta(minutes=self.expire_minutes),
         }
         return jwt.encode(payload, self.secret, algorithm=self.algorithm)
+
+    def user_id(self, token: str) -> int:
+        try:
+            payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
+        except jwt.InvalidTokenError as exc:
+            raise InvalidToken() from exc
+        return int(payload["sub"])

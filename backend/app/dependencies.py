@@ -1,11 +1,13 @@
 from typing import Annotated
 
 from fastapi import Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.security import PasswordHasher
 from app.db import get_session
+from app.domain.errors import InvalidToken
 from app.models import User
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
@@ -27,6 +29,15 @@ def get_auth_service(
     return AuthService(UserRepository(session), PasswordHasher(), tokens)
 
 
-def get_current_user() -> User:
-    # RED placeholder: accepts every request so each test fails on its assertion.
-    return User(id=0, email="", role="")
+bearer = HTTPBearer()
+
+
+def get_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
+    session: Annotated[Session, Depends(get_session)],
+    tokens: Annotated[TokenService, Depends(get_token_service)],
+) -> User:
+    user = UserRepository(session).get_by_id(tokens.user_id(credentials.credentials))
+    if user is None:
+        raise InvalidToken()
+    return user

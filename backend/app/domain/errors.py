@@ -8,3 +8,7 @@ class EmailAlreadyRegistered(DomainError):
 
 class InvalidCredentials(DomainError):
     detail = "Invalid email or password"
+
+
+class InvalidToken(DomainError):
+    detail = "Invalid or expired token"
