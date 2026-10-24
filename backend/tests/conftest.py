@@ -8,14 +8,14 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
 from app.db import get_session, make_engine, make_session_factory
-from app.main import create_app
+from app.factory import create_app
 
 
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(
         DATABASE_URL=f"sqlite:///{(tmp_path / 'test.db').as_posix()}",
-        JWT_SECRET="test-secret",
+        JWT_SECRET="test-secret-at-least-32-characters-long",
     )
 
 
