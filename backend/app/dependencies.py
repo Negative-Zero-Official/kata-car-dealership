@@ -41,3 +41,8 @@ def get_current_user(
     if user is None:
         raise InvalidToken()
     return user
+
+
+def require_admin(user: Annotated[User, Depends(get_current_user)]) -> User:
+    # RED placeholder: lets every authenticated user through so the 403 test fails on its assertion.
+    return user
