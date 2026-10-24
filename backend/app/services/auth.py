@@ -2,12 +2,14 @@ from app.core.security import PasswordHasher
 from app.domain.errors import EmailAlreadyRegistered
 from app.models import User
 from app.repositories.user import UserRepository
+from app.services.token import TokenService
 
 
 class AuthService:
-    def __init__(self, users: UserRepository, hasher: PasswordHasher) -> None:
+    def __init__(self, users: UserRepository, hasher: PasswordHasher, tokens: TokenService) -> None:
         self.users = users
         self.hasher = hasher
+        self.tokens = tokens
 
     def register(self, email: str, password: str) -> User:
         email = email.lower()
@@ -16,3 +18,7 @@ class AuthService:
         return self.users.add(
             User(email=email, hashed_password=self.hasher.hash(password), role="user")
         )
+
+    def login(self, email: str, password: str) -> tuple[str, User]:
+        user = self.users.get_by_email(email)
+        return self.tokens.issue(user), user

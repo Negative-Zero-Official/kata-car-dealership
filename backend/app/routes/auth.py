@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 
 from app.dependencies import get_auth_service
-from app.schemas.auth import RegisterRequest, UserResponse
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth")
@@ -15,3 +15,11 @@ def register(
 ) -> UserResponse:
     user = service.register(payload.email, payload.password)
     return UserResponse.model_validate(user)
+
+
+@router.post("/login", response_model=TokenResponse)
+def login(
+    payload: LoginRequest, service: Annotated[AuthService, Depends(get_auth_service)]
+) -> TokenResponse:
+    token, user = service.login(payload.email, payload.password)
+    return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
