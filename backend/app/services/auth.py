@@ -28,7 +28,7 @@ class AuthService:
         )
 
     def login(self, email: str, password: str) -> tuple[str, User]:
-        user = self.users.get_by_email(email)
+        user = self.users.get_by_email(email.lower())
         if user is None or not self.hasher.verify(password, user.hashed_password):
             raise InvalidCredentials()
         return self.tokens.issue(user), user
