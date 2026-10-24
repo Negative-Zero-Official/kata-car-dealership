@@ -47,3 +47,20 @@ def test_create_admin_twice_does_not_create_duplicate(
 
     count = session.scalar(select(func.count()).select_from(User))
     assert count == 1
+
+
+def test_create_admin_stores_email_lowercase(auth_service: AuthService, session: Session) -> None:
+    auth_service.create_admin("Root@Example.com", PASSWORD)
+
+    admin = UserRepository(session).get_by_email("root@example.com")
+    assert admin is not None
+
+
+def test_create_admin_twice_with_different_case_does_not_create_duplicate(
+    auth_service: AuthService, session: Session
+) -> None:
+    auth_service.create_admin("Root@Example.com", PASSWORD)
+    auth_service.create_admin("ROOT@example.com", PASSWORD)
+
+    count = session.scalar(select(func.count()).select_from(User))
+    assert count == 1
