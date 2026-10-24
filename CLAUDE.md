@@ -10,9 +10,8 @@ Spec and phases: see `dev-plan.md`.
 - **Never edit, skip, xfail or delete an existing test to make it pass** — stop and ask me.
 - No production code without a failing test that needs it.
 
-## Git
-- Never run git commands that change state (add, commit, push, branch, checkout, reset, stash, merge, rebase, tag). I commit myself.
-- Read-only git (`status`, `diff`, `log`) is fine. At the end of each step, suggest a commit message.
+## Export
+- At the end of a task, when I ask to export, export the chat logs to `prompts/<date>-<time>.md` and add a link from `PROMPTS.md`
 
 ## Stack
 - **Backend:** Python, FastAPI, SQLAlchemy 2.0 (typed `Mapped[]` style), SQLite via `DATABASE_URL`, PyJWT for tokens, pwdlib for password hashing, pytest (+ pytest-cov), ruff. Managed with `uv`.
