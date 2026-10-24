@@ -3,9 +3,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app import models  # noqa: F401  registers tables on Base.metadata
 from app.core.config import Settings, get_settings
 from app.db import Base, make_engine, make_session_factory
-from app.routes import health
+from app.routes import auth, health
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -22,4 +23,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.session_factory = make_session_factory(engine)
     app.include_router(health.router, prefix="/api")
+    app.include_router(auth.router, prefix="/api")
     return app
