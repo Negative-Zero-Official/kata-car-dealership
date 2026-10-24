@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from pwdlib import PasswordHash
 from sqlalchemy.orm import Session, sessionmaker
@@ -69,3 +70,19 @@ def test_register_stores_email_lowercase(
 
     assert response.json()["email"] == "alice@x.com"
     assert user is not None
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param({"email": "not-an-email", "password": "s3cret-password"}, id="invalid-email"),
+        pytest.param({"email": "alice@example.com", "password": "short12"}, id="password-under-8-chars"),
+        pytest.param({"password": "s3cret-password"}, id="missing-email"),
+        pytest.param({"email": "alice@example.com"}, id="missing-password"),
+        pytest.param({}, id="empty-body"),
+    ],
+)
+def test_register_rejects_invalid_payload_with_422(client: TestClient, payload: dict[str, str]) -> None:
+    response = client.post("/api/auth/register", json=payload)
+
+    assert response.status_code == 422
