@@ -12,6 +12,7 @@ Spec and phases: see `dev-plan.md`.
 
 ## Export
 - At the end of a task, when I ask to export, export the chat logs to `prompts/<date>-<time>.md` and add a link from `PROMPTS.md`
+- The export should remain in the same commit as the task itself (i.e., no 'docs' commit for prompt logs)
 
 ## Stack
 - **Backend:** Python, FastAPI, SQLAlchemy 2.0 (typed `Mapped[]` style), SQLite via `DATABASE_URL`, PyJWT for tokens, pwdlib for password hashing, pytest (+ pytest-cov), ruff. Managed with `uv`.
