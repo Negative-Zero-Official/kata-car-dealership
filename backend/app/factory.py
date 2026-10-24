@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from app import models  # noqa: F401  registers tables on Base.metadata
 from app.core.config import Settings, get_settings
 from app.db import Base, make_engine, make_session_factory
+from app.exception_handlers import register_exception_handlers
 from app.routes import auth, health
 
 
@@ -22,6 +23,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Car Dealership API", lifespan=lifespan)
     app.state.settings = settings
     app.state.session_factory = make_session_factory(engine)
+    register_exception_handlers(app)
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
     return app

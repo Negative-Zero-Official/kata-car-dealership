@@ -1,10 +1,7 @@
 from app.core.security import PasswordHasher
+from app.domain.errors import EmailAlreadyRegistered
 from app.models import User
 from app.repositories.user import UserRepository
-
-
-class EmailAlreadyRegistered(Exception):
-    pass
 
 
 class AuthService:
