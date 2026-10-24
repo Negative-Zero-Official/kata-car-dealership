@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
+    ADMIN_EMAIL: str | None = None
+    ADMIN_PASSWORD: str | None = None
 
 
 @lru_cache
