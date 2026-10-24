@@ -14,6 +14,7 @@ from app.factory import create_app
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(
+        _env_file=None,
         DATABASE_URL=f"sqlite:///{(tmp_path / 'test.db').as_posix()}",
         JWT_SECRET="test-secret-at-least-32-characters-long",
     )
