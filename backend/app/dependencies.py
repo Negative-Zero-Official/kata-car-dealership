@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.core.security import PasswordHasher
 from app.db import get_session
+from app.models import User
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.token import TokenService
@@ -24,3 +25,8 @@ def get_auth_service(
     tokens: Annotated[TokenService, Depends(get_token_service)],
 ) -> AuthService:
     return AuthService(UserRepository(session), PasswordHasher(), tokens)
+
+
+def get_current_user() -> User:
+    # RED placeholder: accepts every request so each test fails on its assertion.
+    return User(id=0, email="", role="")
