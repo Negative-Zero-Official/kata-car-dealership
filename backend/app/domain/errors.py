@@ -6,6 +6,10 @@ class EmailAlreadyRegistered(DomainError):
     detail = "Email already registered"
 
 
+class EmailBelongsToNonAdmin(DomainError):
+    detail = "Email belongs to a non-admin account"
+
+
 class InvalidCredentials(DomainError):
     detail = "Invalid email or password"
 

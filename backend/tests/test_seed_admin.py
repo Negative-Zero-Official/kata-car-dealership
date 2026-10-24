@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
 from app.core.security import PasswordHasher
+from app.domain.errors import EmailBelongsToNonAdmin
 from app.models import User
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
@@ -64,3 +65,16 @@ def test_create_admin_twice_with_different_case_does_not_create_duplicate(
 
     count = session.scalar(select(func.count()).select_from(User))
     assert count == 1
+
+
+def test_create_admin_rejects_email_of_regular_user_and_keeps_role(
+    auth_service: AuthService, session: Session, make_user: Callable[..., User]
+) -> None:
+    make_user(email="root@example.com")
+
+    with pytest.raises(EmailBelongsToNonAdmin):
+        auth_service.create_admin("root@example.com", PASSWORD)
+
+    user = UserRepository(session).get_by_email("root@example.com")
+    assert user is not None
+    assert user.role == "user"
