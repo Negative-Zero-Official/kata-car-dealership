@@ -20,6 +20,7 @@ class AuthService:
         )
 
     def create_admin(self, email: str, password: str) -> User:
+        email = email.lower()
         existing = self.users.get_by_email(email)
         if existing is not None:
             return existing
