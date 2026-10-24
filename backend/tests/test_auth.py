@@ -86,3 +86,20 @@ def test_register_rejects_invalid_payload_with_422(client: TestClient, payload: 
     response = client.post("/api/auth/register", json=payload)
 
     assert response.status_code == 422
+
+
+def test_register_ignores_role_in_payload_and_creates_user_role(
+    client: TestClient, session_factory: sessionmaker[Session]
+) -> None:
+    response = client.post(
+        "/api/auth/register",
+        json={"email": "mallory@example.com", "password": "s3cret-password", "role": "admin"},
+    )
+
+    with session_factory() as session:
+        user = UserRepository(session).get_by_email("mallory@example.com")
+
+    assert response.status_code == 201
+    assert response.json()["role"] == "user"
+    assert user is not None
+    assert user.role == "user"
