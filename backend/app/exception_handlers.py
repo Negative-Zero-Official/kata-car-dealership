@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from app.domain.errors import DomainError, EmailAlreadyRegistered
+from app.domain.errors import DomainError, EmailAlreadyRegistered, InvalidCredentials
 
 STATUS_BY_ERROR: dict[type[DomainError], int] = {
     EmailAlreadyRegistered: status.HTTP_409_CONFLICT,
+    InvalidCredentials: status.HTTP_401_UNAUTHORIZED,
 }
 
 

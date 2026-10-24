@@ -1,5 +1,5 @@
 from app.core.security import PasswordHasher
-from app.domain.errors import EmailAlreadyRegistered
+from app.domain.errors import EmailAlreadyRegistered, InvalidCredentials
 from app.models import User
 from app.repositories.user import UserRepository
 from app.services.token import TokenService
@@ -21,4 +21,6 @@ class AuthService:
 
     def login(self, email: str, password: str) -> tuple[str, User]:
         user = self.users.get_by_email(email)
+        if user is None or not self.hasher.verify(password, user.hashed_password):
+            raise InvalidCredentials()
         return self.tokens.issue(user), user

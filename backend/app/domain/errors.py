@@ -4,3 +4,7 @@ class DomainError(Exception):
 
 class EmailAlreadyRegistered(DomainError):
     detail = "Email already registered"
+
+
+class InvalidCredentials(DomainError):
+    detail = "Invalid email or password"
