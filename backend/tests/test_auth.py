@@ -138,6 +138,14 @@ def test_login_returns_bearer_token_with_user_claims(
     assert abs(claims["exp"] - expected_exp) < 60
 
 
+def test_login_matches_email_case_insensitively(client: TestClient) -> None:
+    client.post("/api/auth/register", json={"email": "alice@x.com", "password": PASSWORD})
+
+    response = client.post("/api/auth/login", json={"email": "Alice@X.com", "password": PASSWORD})
+
+    assert response.status_code == 200
+
+
 @pytest.mark.parametrize(
     "credentials",
     [
