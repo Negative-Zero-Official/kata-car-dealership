@@ -8,6 +8,7 @@ from app.core.config import Settings
 from app.core.security import PasswordHasher
 from app.db import get_session
 from app.domain.errors import AdminRequired, InvalidToken
+from app.domain.roles import Role
 from app.models import User
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
@@ -44,6 +45,6 @@ def get_current_user(
 
 
 def require_admin(user: Annotated[User, Depends(get_current_user)]) -> User:
-    if user.role != "admin":
+    if user.role != Role.ADMIN:
         raise AdminRequired()
     return user
