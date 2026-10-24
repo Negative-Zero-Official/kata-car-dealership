@@ -2,7 +2,13 @@ from fastapi import FastAPI
 
 
 def create_app() -> FastAPI:
-    return FastAPI(title="Car Dealership API")
+    app = FastAPI(title="Car Dealership API")
+
+    @app.get("/api/health")
+    def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    return app
 
 
 app = create_app()
