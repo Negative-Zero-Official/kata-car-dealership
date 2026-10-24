@@ -5,6 +5,10 @@ from app.repositories.user import UserRepository
 from app.services.token import TokenService
 
 
+def normalise_email(email: str) -> str:
+    return email.lower()
+
+
 class AuthService:
     def __init__(self, users: UserRepository, hasher: PasswordHasher, tokens: TokenService) -> None:
         self.users = users
@@ -12,7 +16,7 @@ class AuthService:
         self.tokens = tokens
 
     def register(self, email: str, password: str) -> User:
-        email = email.lower()
+        email = normalise_email(email)
         if self.users.get_by_email(email) is not None:
             raise EmailAlreadyRegistered(email)
         return self.users.add(
@@ -20,7 +24,7 @@ class AuthService:
         )
 
     def create_admin(self, email: str, password: str) -> User:
-        email = email.lower()
+        email = normalise_email(email)
         existing = self.users.get_by_email(email)
         if existing is not None:
             return existing
@@ -29,7 +33,7 @@ class AuthService:
         )
 
     def login(self, email: str, password: str) -> tuple[str, User]:
-        user = self.users.get_by_email(email.lower())
+        user = self.users.get_by_email(normalise_email(email))
         if user is None or not self.hasher.verify(password, user.hashed_password):
             raise InvalidCredentials()
         return self.tokens.issue(user), user
