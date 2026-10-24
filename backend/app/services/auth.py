@@ -1,5 +1,5 @@
 from app.core.security import PasswordHasher
-from app.domain.errors import EmailAlreadyRegistered, InvalidCredentials
+from app.domain.errors import EmailAlreadyRegistered, EmailBelongsToNonAdmin, InvalidCredentials
 from app.models import User
 from app.repositories.user import UserRepository
 from app.services.token import TokenService
@@ -27,6 +27,8 @@ class AuthService:
         email = normalise_email(email)
         existing = self.users.get_by_email(email)
         if existing is not None:
+            if existing.role != "admin":
+                raise EmailBelongsToNonAdmin(email)
             return existing
         return self.users.add(
             User(email=email, hashed_password=self.hasher.hash(password), role="admin")
