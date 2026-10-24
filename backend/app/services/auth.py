@@ -19,6 +19,9 @@ class AuthService:
             User(email=email, hashed_password=self.hasher.hash(password), role="user")
         )
 
+    def create_admin(self, email: str, password: str) -> None:
+        pass
+
     def login(self, email: str, password: str) -> tuple[str, User]:
         user = self.users.get_by_email(email)
         if user is None or not self.hasher.verify(password, user.hashed_password):
