@@ -1,13 +1,11 @@
 from fastapi import FastAPI
 
+from app.routes import health
+
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Car Dealership API")
-
-    @app.get("/api/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok"}
-
+    app.include_router(health.router, prefix="/api")
     return app
 
 
