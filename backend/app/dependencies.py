@@ -16,7 +16,7 @@ def get_settings(request: Request) -> Settings:
 
 
 def get_token_service(settings: Annotated[Settings, Depends(get_settings)]) -> TokenService:
-    return TokenService(settings.JWT_SECRET, settings.JWT_EXPIRE_MINUTES)
+    return TokenService(settings.JWT_SECRET, settings.JWT_ALGORITHM, settings.JWT_EXPIRE_MINUTES)
 
 
 def get_auth_service(

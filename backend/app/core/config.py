@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "sqlite:///./dev.db"
     JWT_SECRET: str = Field(min_length=32)
+    JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 

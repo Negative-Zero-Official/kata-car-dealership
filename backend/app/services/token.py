@@ -4,12 +4,11 @@ import jwt
 
 from app.models import User
 
-ALGORITHM = "HS256"
-
 
 class TokenService:
-    def __init__(self, secret: str, expire_minutes: int) -> None:
+    def __init__(self, secret: str, algorithm: str, expire_minutes: int) -> None:
         self.secret = secret
+        self.algorithm = algorithm
         self.expire_minutes = expire_minutes
 
     def issue(self, user: User) -> str:
@@ -18,4 +17,4 @@ class TokenService:
             "role": user.role,
             "exp": datetime.now(UTC) + timedelta(minutes=self.expire_minutes),
         }
-        return jwt.encode(payload, self.secret, algorithm=ALGORITHM)
+        return jwt.encode(payload, self.secret, algorithm=self.algorithm)
