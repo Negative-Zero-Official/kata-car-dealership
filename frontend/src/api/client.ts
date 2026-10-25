@@ -11,12 +11,23 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
   onUnauthorized = handler
 }
 
+// FastAPI sends a string detail for HTTPException and a list of { msg, ... } for a 422.
+function detailMessage(detail: unknown): string | undefined {
+  if (typeof detail === 'string') {
+    return detail
+  }
+  if (Array.isArray(detail) && typeof detail[0]?.msg === 'string') {
+    return detail[0].msg
+  }
+  return undefined
+}
+
 export class ApiError extends Error {
   readonly status: number
   readonly detail: unknown
 
   constructor(status: number, detail: unknown) {
-    super(typeof detail === 'string' ? detail : `Request failed with status ${status}`)
+    super(detailMessage(detail) ?? `Request failed with status ${status}`)
     this.name = 'ApiError'
     this.status = status
     this.detail = detail
