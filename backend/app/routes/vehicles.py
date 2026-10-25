@@ -10,7 +10,7 @@ from app.dependencies import (
     require_admin,
 )
 from app.domain.vehicle_filter import VehicleFilter
-from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
+from app.schemas.vehicle import PurchaseRequest, VehicleCreate, VehicleRead, VehicleUpdate
 from app.services.inventory import InventoryService
 from app.services.vehicle import VehicleService
 
@@ -86,6 +86,8 @@ def delete_vehicle(vehicle_id: int, service: VehicleServiceDep) -> None:
 def purchase_vehicle(
     vehicle_id: int,
     service: Annotated[InventoryService, Depends(get_inventory_service)],
+    request: PurchaseRequest | None = None,
 ) -> VehicleRead:
-    vehicle = service.purchase(vehicle_id)
+    quantity = request.quantity if request else PurchaseRequest().quantity
+    vehicle = service.purchase(vehicle_id, quantity)
     return VehicleRead.model_validate(vehicle)

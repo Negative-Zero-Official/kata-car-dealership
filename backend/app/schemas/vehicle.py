@@ -30,3 +30,7 @@ class VehicleRead(VehicleBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class PurchaseRequest(BaseModel):
+    quantity: Annotated[int, Field(gt=0)] = 1

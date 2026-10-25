@@ -6,8 +6,8 @@ class InventoryService:
     def __init__(self, vehicles: VehicleRepository) -> None:
         self.vehicles = vehicles
 
-    def purchase(self, vehicle_id: int) -> Vehicle:
+    def purchase(self, vehicle_id: int, quantity: int) -> Vehicle:
         vehicle = self.vehicles.get(vehicle_id)
         assert vehicle is not None
-        vehicle.quantity -= 1
+        vehicle.quantity -= quantity
         return self.vehicles.save(vehicle)
