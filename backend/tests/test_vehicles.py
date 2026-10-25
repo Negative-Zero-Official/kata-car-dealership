@@ -217,3 +217,79 @@ def test_admin_updates_vehicle_details_and_quantity_is_unchanged(
         "price": "21500.50",
         "quantity": 5,
     }
+
+
+UPDATE = {"make": "Honda", "model": "Civic", "category": "hatchback", "price": "21500.50"}
+
+
+def test_updating_unknown_vehicle_returns_404(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+
+    response = client.put("/api/vehicles/999", json=UPDATE, headers=auth_headers(admin))
+
+    assert response.status_code == 404
+
+
+def test_updating_vehicle_as_regular_user_returns_403(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    user = make_user(email="alice@example.com")
+    created = client.post("/api/vehicles", json=VEHICLE, headers=auth_headers(admin)).json()
+
+    response = client.put(f"/api/vehicles/{created['id']}", json=UPDATE, headers=auth_headers(user))
+
+    assert response.status_code == 403
+
+
+def test_updating_vehicle_without_token_returns_401(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    created = client.post("/api/vehicles", json=VEHICLE, headers=auth_headers(admin)).json()
+
+    response = client.put(f"/api/vehicles/{created['id']}", json=UPDATE)
+
+    assert response.status_code == 401
+
+
+def _update_without(field: str) -> dict[str, object]:
+    return {key: value for key, value in UPDATE.items() if key != field}
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        *(pytest.param(_update_without(field), id=f"missing-{field}") for field in UPDATE),
+        *(
+            pytest.param({**UPDATE, field: blank}, id=f"{label}-{field}")
+            for field in ("make", "model", "category")
+            for label, blank in (("blank", ""), ("whitespace", "   "))
+        ),
+        pytest.param({**UPDATE, "price": "0"}, id="zero-price"),
+        pytest.param({**UPDATE, "price": "-1.00"}, id="negative-price"),
+        pytest.param({**UPDATE, "price": "21500.505"}, id="price-3-decimals"),
+    ],
+)
+def test_updating_vehicle_with_invalid_payload_returns_422(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+    payload: dict[str, object],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    created = client.post("/api/vehicles", json=VEHICLE, headers=auth_headers(admin)).json()
+
+    response = client.put(
+        f"/api/vehicles/{created['id']}", json=payload, headers=auth_headers(admin)
+    )
+
+    assert response.status_code == 422
