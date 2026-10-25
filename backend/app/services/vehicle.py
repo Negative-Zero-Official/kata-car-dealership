@@ -33,6 +33,9 @@ class VehicleService:
         vehicle = self._get(vehicle_id)
         self.vehicles.delete(vehicle)
 
+    def has_any(self) -> bool:
+        return self.vehicles.any()
+
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         return self.vehicles.list_all(limit=limit, offset=offset)
 

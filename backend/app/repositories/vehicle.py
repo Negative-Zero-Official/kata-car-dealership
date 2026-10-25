@@ -1,4 +1,4 @@
-from sqlalchemy import select, update
+from sqlalchemy import exists, select, update
 from sqlalchemy.orm import Session
 
 from app.domain.vehicle_filter import VehicleFilter
@@ -49,6 +49,9 @@ class VehicleRepository:
     def delete(self, vehicle: Vehicle) -> None:
         self.session.delete(vehicle)
         self.session.commit()
+
+    def any(self) -> bool:
+        return bool(self.session.scalar(select(exists().select_from(Vehicle))))
 
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         query = select(Vehicle).order_by(Vehicle.id).limit(limit).offset(offset)

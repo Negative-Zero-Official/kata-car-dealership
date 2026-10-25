@@ -51,7 +51,7 @@ def seed_demo(settings: Settings) -> int:
     with open_session(settings) as session:
         vehicles = VehicleService(VehicleRepository(session))
         # Only seed an empty inventory, so re-running never duplicates or overwrites stock.
-        if vehicles.list_all(limit=1, offset=0):
+        if vehicles.has_any():
             print("Inventory is not empty; skipping demo seed")
             return 0
         vehicles.create_many(DEMO_VEHICLES)
