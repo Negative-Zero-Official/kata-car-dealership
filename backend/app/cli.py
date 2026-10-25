@@ -46,8 +46,7 @@ def seed_demo(settings: Settings) -> int:
             if vehicles.list_all(limit=1, offset=0):
                 print("Inventory is not empty; skipping demo seed")
                 return 0
-            for vehicle in DEMO_VEHICLES:
-                vehicles.create(*vehicle)
+            vehicles.create_many(DEMO_VEHICLES)
     finally:
         engine.dispose()
     print(f"Seeded {len(DEMO_VEHICLES)} demo vehicles")

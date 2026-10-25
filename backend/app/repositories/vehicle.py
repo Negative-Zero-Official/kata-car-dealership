@@ -14,6 +14,12 @@ class VehicleRepository:
         self.session.commit()
         return vehicle
 
+    def add_all(self, vehicles: list[Vehicle]) -> list[Vehicle]:
+        # One commit, so either every vehicle is stored or none is.
+        self.session.add_all(vehicles)
+        self.session.commit()
+        return vehicles
+
     def get(self, vehicle_id: int) -> Vehicle | None:
         return self.session.get(Vehicle, vehicle_id)
 

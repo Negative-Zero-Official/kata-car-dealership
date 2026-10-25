@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from decimal import Decimal
 
 from app.domain.errors import InvalidPriceRange, VehicleNotFound
@@ -15,6 +16,14 @@ class VehicleService:
     ) -> Vehicle:
         return self.vehicles.add(
             Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
+        )
+
+    def create_many(self, rows: Iterable[tuple[str, str, str, Decimal, int]]) -> list[Vehicle]:
+        return self.vehicles.add_all(
+            [
+                Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
+                for make, model, category, price, quantity in rows
+            ]
         )
 
     def update(
