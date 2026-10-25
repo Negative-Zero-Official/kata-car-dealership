@@ -4,6 +4,7 @@ import { GuestRoute } from './auth/GuestRoute'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
 
 function AppHeader() {
@@ -44,6 +45,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<DashboardPage />} />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AuthProvider>
   )
