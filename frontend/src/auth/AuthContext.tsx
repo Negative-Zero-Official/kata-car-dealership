@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { login as loginRequest, type Credentials, type User } from '../api/auth'
-import { setAuthToken } from '../api/client'
+import { setAuthToken, setUnauthorizedHandler } from '../api/client'
 
 export const SESSION_STORAGE_KEY = 'car-dealership.session'
+export const SESSION_EXPIRED_NOTICE = 'Your session expired. Log in again.'
 
 interface Session {
   token: string
@@ -13,6 +14,8 @@ interface AuthContextValue {
   token: string | null
   user: User | null
   isAdmin: boolean
+  // Shown on the login page after an expired session signs the user out.
+  notice: string | null
   login: (credentials: Credentials) => Promise<void>
   logout: () => void
 }
@@ -29,6 +32,7 @@ function restoreSession(): Session | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState(restoreSession)
+  const [notice, setNotice] = useState<string | null>(null)
 
   async function login(credentials: Credentials) {
     const { access_token, user } = await loginRequest(credentials)
@@ -36,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next))
     setAuthToken(next.token)
     setSession(next)
+    setNotice(null)
   }
 
   function logout() {
@@ -44,10 +49,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
   }
 
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      localStorage.removeItem(SESSION_STORAGE_KEY)
+      setAuthToken(null)
+      setSession(null)
+      setNotice(SESSION_EXPIRED_NOTICE)
+    })
+    return () => setUnauthorizedHandler(null)
+  }, [])
+
   const value: AuthContextValue = {
     token: session?.token ?? null,
     user: session?.user ?? null,
     isAdmin: session?.user.role === 'admin',
+    notice,
     login,
     logout,
   }

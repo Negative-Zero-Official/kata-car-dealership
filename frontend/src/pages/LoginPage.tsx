@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, notice } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -26,6 +26,11 @@ export function LoginPage() {
   return (
     <main className="mx-auto max-w-sm px-4 py-12">
       <h1 className="mb-6 text-2xl font-semibold">Log in</h1>
+      {notice && (
+        <p role="status" className="mb-4 rounded bg-amber-100 px-3 py-2 text-amber-900">
+          {notice}
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           Email
