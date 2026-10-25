@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.domain.vehicle_filter import VehicleFilter
@@ -20,6 +20,16 @@ class VehicleRepository:
     def save(self, vehicle: Vehicle) -> Vehicle:
         self.session.commit()
         return vehicle
+
+    def try_decrement(self, vehicle_id: int, amount: int) -> bool:
+        # One conditional UPDATE, so concurrent purchases can never drive stock below zero.
+        result = self.session.execute(
+            update(Vehicle)
+            .where(Vehicle.id == vehicle_id, Vehicle.quantity >= amount)
+            .values(quantity=Vehicle.quantity - amount)
+        )
+        self.session.commit()
+        return result.rowcount == 1
 
     def delete(self, vehicle: Vehicle) -> None:
         self.session.delete(vehicle)

@@ -8,10 +8,10 @@ class InventoryService:
         self.vehicles = vehicles
 
     def purchase(self, vehicle_id: int, quantity: int) -> Vehicle:
+        decremented = self.vehicles.try_decrement(vehicle_id, quantity)
         vehicle = self.vehicles.get(vehicle_id)
         if vehicle is None:
             raise VehicleNotFound
-        if quantity > vehicle.quantity:
+        if not decremented:
             raise InsufficientStock
-        vehicle.quantity -= quantity
-        return self.vehicles.save(vehicle)
+        return vehicle
