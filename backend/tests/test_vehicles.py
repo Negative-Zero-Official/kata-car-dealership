@@ -39,6 +39,38 @@ def test_admin_creates_vehicle_and_price_round_trips_as_string(
     }
 
 
+@pytest.mark.parametrize(
+    "price",
+    [
+        pytest.param("100", id="whole-number"),
+        pytest.param("100.5", id="one-decimal-place"),
+        pytest.param("1e2", id="scientific-notation"),
+    ],
+)
+def test_created_vehicle_price_is_returned_with_two_decimal_places(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+    price: str,
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+
+    response = client.post(
+        "/api/vehicles",
+        json={
+            "make": "Toyota",
+            "model": "Corolla",
+            "category": "sedan",
+            "price": price,
+            "quantity": 5,
+        },
+        headers=auth_headers(admin),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["price"] == f"{Decimal(price):.2f}"
+
+
 VEHICLE = {
     "make": "Toyota",
     "model": "Corolla",
