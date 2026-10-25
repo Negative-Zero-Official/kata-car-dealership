@@ -24,3 +24,7 @@ class AdminRequired(DomainError):
 
 class VehicleNotFound(DomainError):
     detail = "Vehicle not found"
+
+
+class InvalidPriceRange(DomainError):
+    detail = "min_price must not exceed max_price"

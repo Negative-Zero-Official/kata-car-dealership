@@ -341,3 +341,154 @@ def test_deleting_vehicle_as_regular_user_returns_403_and_keeps_it(
     assert response.status_code == 403
     listing = client.get("/api/vehicles", headers=auth_headers(user))
     assert listing.json() == [_as_json(vehicle)]
+
+
+def test_searching_by_partial_make_is_case_insensitive_and_excludes_others(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    corolla = make_vehicle()
+    camry = make_vehicle(make="TOYOTA", model="Camry")
+    make_vehicle(make="Honda", model="Civic")
+
+    response = client.get("/api/vehicles/search?make=toy", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(corolla), _as_json(camry)]
+
+
+@pytest.mark.parametrize(
+    ("field", "query", "matching", "other"),
+    [
+        ("model", "cor", ("Corolla", "COROLLA Cross"), "Camry"),
+        ("category", "suv", ("SUV", "compact suv"), "sedan"),
+    ],
+)
+def test_searching_by_partial_field_is_case_insensitive_and_excludes_others(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+    field: str,
+    query: str,
+    matching: tuple[str, str],
+    other: str,
+) -> None:
+    user = make_user(email="alice@example.com")
+    first = make_vehicle(**{field: matching[0]})
+    second = make_vehicle(**{field: matching[1]})
+    make_vehicle(**{field: other})
+
+    response = client.get(f"/api/vehicles/search?{field}={query}", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(first), _as_json(second)]
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_prices"),
+    [
+        ("min_price=20000", ("20000.00", "30000.00")),
+        ("max_price=20000", ("10000.00", "20000.00")),
+        ("min_price=20000&max_price=20000", ("20000.00",)),
+    ],
+)
+def test_searching_by_price_range_is_inclusive(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+    query: str,
+    expected_prices: tuple[str, ...],
+) -> None:
+    user = make_user(email="alice@example.com")
+    for price in ("10000", "20000", "30000"):
+        make_vehicle(price=Decimal(price))
+
+    response = client.get(f"/api/vehicles/search?{query}", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert tuple(v["price"] for v in response.json()) == expected_prices
+
+
+def test_searching_with_several_filters_returns_only_vehicles_matching_all(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    match = make_vehicle(make="Toyota", category="suv", price=Decimal("30000.00"))
+    make_vehicle(make="Honda", category="suv", price=Decimal("30000.00"))
+    make_vehicle(make="Toyota", category="sedan", price=Decimal("30000.00"))
+    make_vehicle(make="Toyota", category="suv", price=Decimal("50000.00"))
+
+    response = client.get(
+        "/api/vehicles/search?make=toyota&category=suv&max_price=40000",
+        headers=auth_headers(user),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(match)]
+
+
+def test_searching_without_filters_returns_all_vehicles(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    created = [make_vehicle(), make_vehicle(make="Honda", model="Civic")]
+
+    response = client.get("/api/vehicles/search", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(vehicle) for vehicle in created]
+
+
+def test_searching_with_no_match_returns_empty_list(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    make_vehicle()
+
+    response = client.get("/api/vehicles/search?make=ferrari", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        pytest.param("min_price=30000&max_price=20000", id="min-above-max"),
+        pytest.param("min_price=-1", id="negative-min"),
+        pytest.param("max_price=-1", id="negative-max"),
+        pytest.param("min_price=abc", id="non-numeric-min"),
+        pytest.param("max_price=abc", id="non-numeric-max"),
+    ],
+)
+def test_searching_with_invalid_price_parameters_returns_422(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+    query: str,
+) -> None:
+    user = make_user(email="alice@example.com")
+
+    response = client.get(f"/api/vehicles/search?{query}", headers=auth_headers(user))
+
+    assert response.status_code == 422
+
+
+def test_searching_without_token_returns_401(client: TestClient) -> None:
+    response = client.get("/api/vehicles/search")
+
+    assert response.status_code == 401

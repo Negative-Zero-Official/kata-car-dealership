@@ -1,8 +1,10 @@
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
 from app.dependencies import get_current_user, get_vehicle_service, require_admin
+from app.domain.vehicle_filter import VehicleFilter
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.services.vehicle import VehicleService
 
@@ -18,6 +20,27 @@ def list_vehicles(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[VehicleRead]:
     vehicles = service.list_all(limit=limit, offset=offset)
+    return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
+
+
+def search_filter(
+    make: str | None = None,
+    model: str | None = None,
+    category: str | None = None,
+    min_price: Annotated[Decimal | None, Query(ge=0)] = None,
+    max_price: Annotated[Decimal | None, Query(ge=0)] = None,
+) -> VehicleFilter:
+    return VehicleFilter(
+        make=make, model=model, category=category, min_price=min_price, max_price=max_price
+    )
+
+
+@router.get("/search", response_model=list[VehicleRead], dependencies=[Depends(get_current_user)])
+def search_vehicles(
+    service: VehicleServiceDep,
+    criteria: Annotated[VehicleFilter, Depends(search_filter)],
+) -> list[VehicleRead]:
+    vehicles = service.search(criteria)
     return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
 
 
