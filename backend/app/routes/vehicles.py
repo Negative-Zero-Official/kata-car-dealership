@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 
 from app.dependencies import get_current_user, get_vehicle_service, require_admin
-from app.schemas.vehicle import VehicleCreate, VehicleRead
+from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.services.vehicle import VehicleService
 
 router = APIRouter(prefix="/vehicles")
@@ -29,4 +29,14 @@ def create_vehicle(
     payload: VehicleCreate, service: Annotated[VehicleService, Depends(get_vehicle_service)]
 ) -> VehicleRead:
     vehicle = service.create(**payload.model_dump())
+    return VehicleRead.model_validate(vehicle)
+
+
+@router.put("/{vehicle_id}", response_model=VehicleRead, dependencies=[Depends(require_admin)])
+def update_vehicle(
+    vehicle_id: int,
+    payload: VehicleUpdate,
+    service: Annotated[VehicleService, Depends(get_vehicle_service)],
+) -> VehicleRead:
+    vehicle = service.update(vehicle_id, **payload.model_dump())
     return VehicleRead.model_validate(vehicle)

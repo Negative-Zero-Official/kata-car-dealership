@@ -19,6 +19,13 @@ class VehicleCreate(VehicleBase):
     pass
 
 
+class VehicleUpdate(BaseModel):
+    make: NonBlankStr
+    model: NonBlankStr
+    category: NonBlankStr
+    price: Annotated[Money, Field(gt=0, decimal_places=2)]
+
+
 class VehicleRead(VehicleBase):
     model_config = ConfigDict(from_attributes=True)
 
