@@ -293,3 +293,50 @@ def test_updating_vehicle_with_invalid_payload_returns_422(
     )
 
     assert response.status_code == 422
+
+
+def test_admin_deletes_vehicle_and_it_is_gone_from_the_list(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    kept = client.post("/api/vehicles", json=VEHICLE, headers=auth_headers(admin)).json()
+    doomed = client.post(
+        "/api/vehicles", json={**VEHICLE, "model": "Camry"}, headers=auth_headers(admin)
+    ).json()
+
+    response = client.delete(f"/api/vehicles/{doomed['id']}", headers=auth_headers(admin))
+
+    assert response.status_code == 204
+    assert response.content == b""
+    listing = client.get("/api/vehicles", headers=auth_headers(admin))
+    assert listing.json() == [kept]
+
+
+def test_deleting_unknown_vehicle_returns_404(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+
+    response = client.delete("/api/vehicles/999", headers=auth_headers(admin))
+
+    assert response.status_code == 404
+
+
+def test_deleting_vehicle_as_regular_user_returns_403_and_keeps_it(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    user = make_user(email="alice@example.com")
+    created = client.post("/api/vehicles", json=VEHICLE, headers=auth_headers(admin)).json()
+
+    response = client.delete(f"/api/vehicles/{created['id']}", headers=auth_headers(user))
+
+    assert response.status_code == 403
+    listing = client.get("/api/vehicles", headers=auth_headers(user))
+    assert listing.json() == [created]
