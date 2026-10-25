@@ -101,3 +101,19 @@ test('Log out is not shown while signed out', () => {
 
   expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
 })
+
+test.each(['/login', '/register'])('visiting %s while signed in goes to the dashboard', async (path) => {
+  localStorage.setItem(
+    SESSION_STORAGE_KEY,
+    JSON.stringify({ token: 'a.b.c', user: { id: 1, email: 'buyer@example.com', role: 'user' } }),
+  )
+  server.use(http.get('/api/vehicles', () => HttpResponse.json([])))
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <App />
+    </MemoryRouter>,
+  )
+
+  expect(await screen.findByRole('heading', { name: 'Vehicles' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: /Log in|Create an account/ })).not.toBeInTheDocument()
+})
