@@ -274,3 +274,23 @@ test('Restock sends the quantity and the card shows the new stock', async () => 
   expect(await card.findByText('8 in stock')).toBeInTheDocument()
   expect(request).toEqual({ id: '1', body: { quantity: 3 } })
 })
+
+test('Restock with an empty quantity shows an inline error and sends no request', async () => {
+  let posted = false
+  server.use(
+    http.post('/api/vehicles/:id/restock', () => {
+      posted = true
+      return HttpResponse.json({ ...corolla, quantity: 5 })
+    }),
+  )
+  signInAs('admin')
+  await renderDashboard()
+  const card = corollaCard()
+
+  await userEvent.setup().click(card.getByRole('button', { name: 'Restock' }))
+
+  expect(card.getByLabelText('Restock quantity')).toHaveAccessibleDescription(
+    'Enter a whole number of 1 or more',
+  )
+  expect(posted).toBe(false)
+})
