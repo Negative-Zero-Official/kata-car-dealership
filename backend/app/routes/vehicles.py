@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -28,8 +29,13 @@ def search_vehicles(
     make: str | None = None,
     model: str | None = None,
     category: str | None = None,
+    min_price: Decimal | None = None,
+    max_price: Decimal | None = None,
 ) -> list[VehicleRead]:
-    vehicles = service.search(VehicleFilter(make=make, model=model, category=category))
+    criteria = VehicleFilter(
+        make=make, model=model, category=category, min_price=min_price, max_price=max_price
+    )
+    vehicles = service.search(criteria)
     return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
 
 

@@ -37,4 +37,8 @@ class VehicleRepository:
             query = query.where(Vehicle.model.ilike(f"%{criteria.model}%"))
         if criteria.category is not None:
             query = query.where(Vehicle.category.ilike(f"%{criteria.category}%"))
+        if criteria.min_price is not None:
+            query = query.where(Vehicle.price >= criteria.min_price)
+        if criteria.max_price is not None:
+            query = query.where(Vehicle.price <= criteria.max_price)
         return list(self.session.scalars(query))
