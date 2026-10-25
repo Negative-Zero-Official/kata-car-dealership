@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import Settings
 from app.db import get_session, make_engine, make_session_factory
 from app.factory import create_app
-from tests.factories import auth_headers, make_user  # noqa: F401  shared fixtures
+from tests.factories import auth_headers, make_user, make_vehicle  # noqa: F401  shared fixtures
 
 
 @pytest.fixture

@@ -11,8 +11,10 @@ from app.domain.errors import AdminRequired, InvalidToken
 from app.domain.roles import Role
 from app.models import User
 from app.repositories.user import UserRepository
+from app.repositories.vehicle import VehicleRepository
 from app.services.auth import AuthService
 from app.services.token import TokenService
+from app.services.vehicle import VehicleService
 
 
 def get_settings(request: Request) -> Settings:
@@ -28,6 +30,10 @@ def get_auth_service(
     tokens: Annotated[TokenService, Depends(get_token_service)],
 ) -> AuthService:
     return AuthService(UserRepository(session), PasswordHasher(), tokens)
+
+
+def get_vehicle_service(session: Annotated[Session, Depends(get_session)]) -> VehicleService:
+    return VehicleService(VehicleRepository(session))
 
 
 bearer = HTTPBearer()
