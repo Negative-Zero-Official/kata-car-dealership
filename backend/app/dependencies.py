@@ -13,6 +13,7 @@ from app.models import User
 from app.repositories.user import UserRepository
 from app.repositories.vehicle import VehicleRepository
 from app.services.auth import AuthService
+from app.services.inventory import InventoryService
 from app.services.token import TokenService
 from app.services.vehicle import VehicleService
 
@@ -34,6 +35,10 @@ def get_auth_service(
 
 def get_vehicle_service(session: Annotated[Session, Depends(get_session)]) -> VehicleService:
     return VehicleService(VehicleRepository(session))
+
+
+def get_inventory_service(session: Annotated[Session, Depends(get_session)]) -> InventoryService:
+    return InventoryService(VehicleRepository(session))
 
 
 bearer = HTTPBearer()
