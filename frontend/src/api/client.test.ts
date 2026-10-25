@@ -54,3 +54,30 @@ test('resolves to undefined for a 204 response', async () => {
 
   await expect(apiRequest('/api/vehicles/1', { method: 'DELETE' })).resolves.toBeUndefined()
 })
+
+test('a 422 validation error is thrown with the first validation message', async () => {
+  server.use(
+    http.post('/api/vehicles/1/restock', () =>
+      HttpResponse.json(
+        {
+          detail: [
+            {
+              type: 'greater_than',
+              loc: ['body', 'quantity'],
+              msg: 'Input should be greater than 0',
+              input: 0,
+            },
+          ],
+        },
+        { status: 422 },
+      ),
+    ),
+  )
+
+  const error = await apiRequest('/api/vehicles/1/restock', { method: 'POST' }).catch(
+    (e: unknown) => e,
+  )
+
+  expect(error).toBeInstanceOf(ApiError)
+  expect(error).toMatchObject({ status: 422, message: 'Input should be greater than 0' })
+})
