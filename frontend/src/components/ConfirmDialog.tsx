@@ -4,6 +4,8 @@ interface ConfirmDialogProps {
   title: string
   description?: string
   confirmLabel: string
+  // Destructive confirmations are red; everything else uses the primary action colour.
+  tone?: 'danger' | 'primary'
   onConfirm: () => void
   onCancel: () => void
 }
@@ -12,6 +14,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  tone = 'danger',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -25,7 +28,11 @@ export function ConfirmDialog({
         <button type="button" onClick={onCancel} className="btn-secondary">
           Cancel
         </button>
-        <button type="button" onClick={onConfirm} className="btn-danger">
+        <button
+          type="button"
+          onClick={onConfirm}
+          className={tone === 'danger' ? 'btn-danger' : 'btn-primary'}
+        >
           {confirmLabel}
         </button>
       </div>

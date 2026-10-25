@@ -1,13 +1,7 @@
-import type { Money, Vehicle } from '../api/vehicles'
+import type { Vehicle } from '../api/vehicles'
+import { formatPrice } from '../format'
 import { PurchaseButton } from './PurchaseButton'
 import { RestockControl } from './RestockControl'
-
-const priceFormat = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
-
-// Intl formats the decimal string exactly, so the price never passes through a float.
-function formatPrice(price: Money): string {
-  return priceFormat.format(price as Intl.StringNumericLiteral)
-}
 
 interface AdminActions {
   onEdit: () => void
@@ -16,7 +10,8 @@ interface AdminActions {
 
 interface VehicleCardProps {
   vehicle: Vehicle
-  // Called with the vehicle the API returns after a purchase or restock.
+  onPurchase: () => void
+  // Called with the vehicle the API returns after a restock.
   onUpdated: (vehicle: Vehicle) => void
   onError: (message: string) => void
   // Only passed for admins.
@@ -25,7 +20,13 @@ interface VehicleCardProps {
 
 // Laid out like a dealer's window sticker: model and price up top, a hang tag for
 // stock, and the admin tools below a perforated tear-off line.
-export function VehicleCard({ vehicle, onUpdated, onError, admin }: VehicleCardProps) {
+export function VehicleCard({
+  vehicle,
+  onPurchase,
+  onUpdated,
+  onError,
+  admin,
+}: VehicleCardProps) {
   const soldOut = vehicle.quantity === 0
   const tagColours = soldOut ? 'bg-sold text-white' : 'bg-tag text-ink'
 
@@ -49,7 +50,7 @@ export function VehicleCard({ vehicle, onUpdated, onError, admin }: VehicleCardP
             {vehicle.category}
           </p>
         </div>
-        <PurchaseButton vehicle={vehicle} onPurchased={onUpdated} onError={onError} />
+        <PurchaseButton vehicle={vehicle} onPurchase={onPurchase} />
       </div>
       {admin && (
         <div className="flex flex-col gap-3 border-t-2 border-dashed border-line p-5">

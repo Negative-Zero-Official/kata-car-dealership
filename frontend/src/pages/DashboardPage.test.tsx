@@ -115,8 +115,10 @@ test('purchasing calls the API and the card shows one fewer in stock', async () 
   )
   renderDashboard()
   const card = await findCard('Toyota Corolla')
+  const user = userEvent.setup()
 
-  await userEvent.setup().click(card.getByRole('button', { name: 'Purchase' }))
+  await user.click(card.getByRole('button', { name: 'Purchase' }))
+  await user.click(screen.getByRole('button', { name: 'Confirm purchase' }))
 
   expect(await card.findByText('4 in stock')).toBeInTheDocument()
   expect(purchased).toBe('1')
@@ -131,8 +133,10 @@ test('a 409 on purchase shows an error toast and leaves the stock unchanged', as
   )
   renderDashboard()
   const card = await findCard('Toyota Corolla')
+  const user = userEvent.setup()
 
-  await userEvent.setup().click(card.getByRole('button', { name: 'Purchase' }))
+  await user.click(card.getByRole('button', { name: 'Purchase' }))
+  await user.click(screen.getByRole('button', { name: 'Confirm purchase' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Vehicle is out of stock')
   expect(card.getByText('5 in stock')).toBeInTheDocument()

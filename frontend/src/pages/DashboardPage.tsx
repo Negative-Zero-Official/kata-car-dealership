@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 're
 import {
   deleteVehicle,
   listVehicles,
+  purchaseVehicle,
   searchVehicles,
   type Vehicle,
   type VehicleFilter,
@@ -9,9 +10,10 @@ import {
 import { useAuth } from '../auth/AuthContext'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FilterBar } from '../components/FilterBar'
-import { Toast } from '../components/Toast'
+import { Toast, type ToastMessage } from '../components/Toast'
 import { VehicleCard } from '../components/VehicleCard'
 import { VehicleFormModal } from '../components/VehicleFormModal'
+import { formatPrice } from '../format'
 
 type State =
   | { status: 'loading' }
@@ -48,10 +50,11 @@ export function DashboardPage() {
   const [state, setState] = useState<State>({ status: 'loading' })
   // Bumped by Retry to re-run the fetch effect.
   const [attempt, setAttempt] = useState(0)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastMessage | null>(null)
   // null while closed; { vehicle } edits that vehicle, {} adds a new one.
   const [form, setForm] = useState<{ vehicle?: Vehicle } | null>(null)
   const [deleting, setDeleting] = useState<Vehicle | null>(null)
+  const [purchasing, setPurchasing] = useState<Vehicle | null>(null)
   // The filter panel is a sidebar on wide screens and a drawer on narrow ones.
   const [filtersOpen, setFiltersOpen] = useState(false)
   const filtersToggle = useRef<HTMLButtonElement>(null)
@@ -75,6 +78,10 @@ export function DashboardPage() {
   }, [filtersOpen])
 
   const dismissToast = useCallback(() => setToast(null), [])
+
+  function showError(text: string) {
+    setToast({ text, kind: 'error' })
+  }
 
   function closeFilters() {
     setFiltersOpen(false)
@@ -132,6 +139,16 @@ export function DashboardPage() {
     upsertVehicle(updated)
   }
 
+  async function confirmPurchase(vehicle: Vehicle) {
+    setPurchasing(null)
+    try {
+      upsertVehicle(await purchaseVehicle(vehicle.id))
+      setToast({ text: `Purchased ${vehicle.make} ${vehicle.model}`, kind: 'success' })
+    } catch (e) {
+      showError(e instanceof Error ? e.message : 'Could not complete the purchase.')
+    }
+  }
+
   function handleSaved(saved: Vehicle) {
     setForm(null)
     upsertVehicle(saved)
@@ -147,7 +164,7 @@ export function DashboardPage() {
           : current,
       )
     } catch (e) {
-      setToast(e instanceof Error ? e.message : 'Could not delete the vehicle.')
+      showError(e instanceof Error ? e.message : 'Could not delete the vehicle.')
     }
   }
 
@@ -232,8 +249,9 @@ export function DashboardPage() {
                   <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}
+                    onPurchase={() => setPurchasing(vehicle)}
                     onUpdated={handleUpdated}
-                    onError={setToast}
+                    onError={showError}
                     admin={
                       isAdmin
                         ? {
@@ -263,6 +281,16 @@ export function DashboardPage() {
           confirmLabel="Delete vehicle"
           onConfirm={() => confirmDelete(deleting)}
           onCancel={() => setDeleting(null)}
+        />
+      )}
+      {purchasing && (
+        <ConfirmDialog
+          title={`Buy ${purchasing.make} ${purchasing.model}?`}
+          description={`One vehicle for ${formatPrice(purchasing.price)}.`}
+          confirmLabel="Confirm purchase"
+          tone="primary"
+          onConfirm={() => confirmPurchase(purchasing)}
+          onCancel={() => setPurchasing(null)}
         />
       )}
       {toast && <Toast message={toast} onDismiss={dismissToast} />}
