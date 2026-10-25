@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Vehicle
@@ -11,3 +12,6 @@ class VehicleRepository:
         self.session.add(vehicle)
         self.session.commit()
         return vehicle
+
+    def list_all(self) -> list[Vehicle]:
+        return list(self.session.scalars(select(Vehicle).order_by(Vehicle.id)))

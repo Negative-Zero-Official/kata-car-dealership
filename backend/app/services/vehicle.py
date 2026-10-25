@@ -14,3 +14,6 @@ class VehicleService:
         return self.vehicles.add(
             Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
         )
+
+    def list_all(self) -> list[Vehicle]:
+        return self.vehicles.list_all()
