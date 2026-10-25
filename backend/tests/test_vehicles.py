@@ -341,3 +341,20 @@ def test_deleting_vehicle_as_regular_user_returns_403_and_keeps_it(
     assert response.status_code == 403
     listing = client.get("/api/vehicles", headers=auth_headers(user))
     assert listing.json() == [_as_json(vehicle)]
+
+
+def test_searching_by_partial_make_is_case_insensitive_and_excludes_others(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    corolla = make_vehicle()
+    camry = make_vehicle(make="TOYOTA", model="Camry")
+    make_vehicle(make="Honda", model="Civic")
+
+    response = client.get("/api/vehicles/search?make=toy", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(corolla), _as_json(camry)]
