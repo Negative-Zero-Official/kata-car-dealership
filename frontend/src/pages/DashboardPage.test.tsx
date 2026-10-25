@@ -86,3 +86,54 @@ test('shows an error with Retry, which loads the vehicles again', async () => {
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   expect(calls).toBe(2)
 })
+
+async function findCard(name: string) {
+  const heading = await screen.findByRole('heading', { name })
+  return within(heading.closest('li')!)
+}
+
+test('a vehicle with no stock has a disabled Sold out button', async () => {
+  server.use(http.get('/api/vehicles', () => HttpResponse.json([corolla, crv])))
+  renderDashboard()
+
+  const soldOut = await findCard('Honda CR-V')
+  expect(soldOut.getByRole('button', { name: 'Sold out' })).toBeDisabled()
+  expect(soldOut.queryByRole('button', { name: 'Purchase' })).not.toBeInTheDocument()
+
+  const inStock = await findCard('Toyota Corolla')
+  expect(inStock.getByRole('button', { name: 'Purchase' })).toBeEnabled()
+})
+
+test('purchasing calls the API and the card shows one fewer in stock', async () => {
+  let purchased: string | null = null
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla])),
+    http.post('/api/vehicles/:id/purchase', ({ params }) => {
+      purchased = params.id as string
+      return HttpResponse.json({ ...corolla, quantity: corolla.quantity - 1 })
+    }),
+  )
+  renderDashboard()
+  const card = await findCard('Toyota Corolla')
+
+  await userEvent.setup().click(card.getByRole('button', { name: 'Purchase' }))
+
+  expect(await card.findByText('4 in stock')).toBeInTheDocument()
+  expect(purchased).toBe('1')
+})
+
+test('a 409 on purchase shows an error toast and leaves the stock unchanged', async () => {
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla])),
+    http.post('/api/vehicles/:id/purchase', () =>
+      HttpResponse.json({ detail: 'Vehicle is out of stock' }, { status: 409 }),
+    ),
+  )
+  renderDashboard()
+  const card = await findCard('Toyota Corolla')
+
+  await userEvent.setup().click(card.getByRole('button', { name: 'Purchase' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Vehicle is out of stock')
+  expect(card.getByText('5 in stock')).toBeInTheDocument()
+})
