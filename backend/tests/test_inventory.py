@@ -106,3 +106,76 @@ def test_purchasing_vehicle_without_token_returns_401(
     response = client.post(f"/api/vehicles/{vehicle.id}/purchase")
 
     assert response.status_code == 401
+
+
+def test_admin_restocking_vehicle_increases_stock(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    vehicle = make_vehicle(quantity=2)
+
+    response = client.post(
+        f"/api/vehicles/{vehicle.id}/restock", json={"quantity": 5}, headers=auth_headers(admin)
+    )
+
+    assert response.status_code == 200
+    assert response.json()["quantity"] == 7
+    listing = client.get("/api/vehicles", headers=auth_headers(admin))
+    assert listing.json()[0]["quantity"] == 7
+
+
+def test_restocking_vehicle_as_regular_user_returns_403(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    vehicle = make_vehicle(quantity=2)
+
+    response = client.post(
+        f"/api/vehicles/{vehicle.id}/restock", json={"quantity": 5}, headers=auth_headers(user)
+    )
+
+    assert response.status_code == 403
+    listing = client.get("/api/vehicles", headers=auth_headers(user))
+    assert listing.json()[0]["quantity"] == 2
+
+
+@pytest.mark.parametrize(
+    "body",
+    [None, {}, {"quantity": 0}, {"quantity": -1}],
+    ids=["no-body", "missing", "zero", "negative"],
+)
+def test_restock_rejects_a_missing_or_non_positive_quantity(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+    body: dict[str, int] | None,
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    vehicle = make_vehicle(quantity=2)
+
+    response = client.post(
+        f"/api/vehicles/{vehicle.id}/restock", json=body, headers=auth_headers(admin)
+    )
+
+    assert response.status_code == 422
+
+
+def test_restocking_unknown_vehicle_returns_404(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+
+    response = client.post(
+        "/api/vehicles/999/restock", json={"quantity": 5}, headers=auth_headers(admin)
+    )
+
+    assert response.status_code == 404
