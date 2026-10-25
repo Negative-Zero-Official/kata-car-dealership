@@ -22,7 +22,7 @@ class VehicleRepository:
         return vehicle
 
     def try_decrement(self, vehicle_id: int, amount: int) -> bool:
-        # One conditional UPDATE, so concurrent purchases can never drive stock below zero.
+        # Check and subtract in one statement; see docs/adr/0001-atomic-stock-decrement.md.
         result = self.session.execute(
             update(Vehicle)
             .where(Vehicle.id == vehicle_id, Vehicle.quantity >= amount)
