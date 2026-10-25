@@ -23,8 +23,13 @@ def list_vehicles(
 
 
 @router.get("/search", response_model=list[VehicleRead], dependencies=[Depends(get_current_user)])
-def search_vehicles(service: VehicleServiceDep, make: str | None = None) -> list[VehicleRead]:
-    vehicles = service.search(VehicleFilter(make=make))
+def search_vehicles(
+    service: VehicleServiceDep,
+    make: str | None = None,
+    model: str | None = None,
+    category: str | None = None,
+) -> list[VehicleRead]:
+    vehicles = service.search(VehicleFilter(make=make, model=model, category=category))
     return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
 
 

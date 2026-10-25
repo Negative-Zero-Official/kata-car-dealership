@@ -33,4 +33,8 @@ class VehicleRepository:
         query = select(Vehicle).order_by(Vehicle.id)
         if criteria.make is not None:
             query = query.where(Vehicle.make.ilike(f"%{criteria.make}%"))
+        if criteria.model is not None:
+            query = query.where(Vehicle.model.ilike(f"%{criteria.model}%"))
+        if criteria.category is not None:
+            query = query.where(Vehicle.category.ilike(f"%{criteria.category}%"))
         return list(self.session.scalars(query))
