@@ -498,6 +498,32 @@ def test_searching_with_no_match_returns_empty_list(
 
 
 @pytest.mark.parametrize(
+    ("query", "expected_model"),
+    [
+        pytest.param("model=F_150", "F_150", id="underscore"),
+        pytest.param("model=100%25", "100%", id="percent"),
+    ],
+)
+def test_searching_treats_like_wildcards_in_the_query_literally(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+    query: str,
+    expected_model: str,
+) -> None:
+    user = make_user(email="alice@example.com")
+    match = make_vehicle(model=expected_model)
+    make_vehicle(model="FX150")
+    make_vehicle(model="1000")
+
+    response = client.get(f"/api/vehicles/search?{query}", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(match)]
+
+
+@pytest.mark.parametrize(
     "query",
     [
         pytest.param("min_price=30000&max_price=20000", id="min-above-max"),
