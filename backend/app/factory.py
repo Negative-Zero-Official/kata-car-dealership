@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  registers tables on Base.metadata
 from app.core.config import Settings, get_settings
@@ -23,6 +24,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Car Dealership API", lifespan=lifespan)
     app.state.settings = settings
     app.state.session_factory = make_session_factory(engine)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     register_exception_handlers(app)
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
