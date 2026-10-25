@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
-import { listVehicles, searchVehicles, type Vehicle, type VehicleFilter } from '../api/vehicles'
+import {
+  deleteVehicle,
+  listVehicles,
+  searchVehicles,
+  type Vehicle,
+  type VehicleFilter,
+} from '../api/vehicles'
 import { useAuth } from '../auth/AuthContext'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FilterBar } from '../components/FilterBar'
 import { VehicleCard } from '../components/VehicleCard'
 import { VehicleFormModal } from '../components/VehicleFormModal'
@@ -18,6 +25,7 @@ export function DashboardPage() {
   const [toast, setToast] = useState<string | null>(null)
   // null while closed; { vehicle } edits that vehicle, {} adds a new one.
   const [form, setForm] = useState<{ vehicle?: Vehicle } | null>(null)
+  const [deleting, setDeleting] = useState<Vehicle | null>(null)
 
   useEffect(() => {
     let current = true
@@ -60,7 +68,7 @@ export function DashboardPage() {
     })
   }
 
-  function handlePurchased(updated: Vehicle) {
+  function handleUpdated(updated: Vehicle) {
     setToast(null)
     upsertVehicle(updated)
   }
@@ -68,6 +76,20 @@ export function DashboardPage() {
   function handleSaved(saved: Vehicle) {
     setForm(null)
     upsertVehicle(saved)
+  }
+
+  async function confirmDelete(vehicle: Vehicle) {
+    setDeleting(null)
+    try {
+      await deleteVehicle(vehicle.id)
+      setState((current) =>
+        current.status === 'loaded'
+          ? { status: 'loaded', vehicles: current.vehicles.filter((v) => v.id !== vehicle.id) }
+          : current,
+      )
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : 'Could not delete the vehicle.')
+    }
   }
 
   return (
@@ -103,9 +125,16 @@ export function DashboardPage() {
               <VehicleCard
                 key={vehicle.id}
                 vehicle={vehicle}
-                onPurchased={handlePurchased}
-                onPurchaseError={setToast}
-                onEdit={isAdmin ? () => setForm({ vehicle }) : undefined}
+                onUpdated={handleUpdated}
+                onError={setToast}
+                admin={
+                  isAdmin
+                    ? {
+                        onEdit: () => setForm({ vehicle }),
+                        onDelete: () => setDeleting(vehicle),
+                      }
+                    : undefined
+                }
               />
             ))}
           </ul>
@@ -115,6 +144,14 @@ export function DashboardPage() {
           vehicle={form.vehicle}
           onSaved={handleSaved}
           onCancel={() => setForm(null)}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          title={`Delete ${deleting.make} ${deleting.model}?`}
+          confirmLabel="Delete vehicle"
+          onConfirm={() => confirmDelete(deleting)}
+          onCancel={() => setDeleting(null)}
         />
       )}
       {toast && (
