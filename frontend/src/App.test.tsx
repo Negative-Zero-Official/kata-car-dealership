@@ -117,3 +117,14 @@ test.each(['/login', '/register'])('visiting %s while signed in goes to the dash
   expect(await screen.findByRole('heading', { name: 'Vehicles' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: /Log in|Create an account/ })).not.toBeInTheDocument()
 })
+
+test('an unknown path shows a not-found page with a link home', async () => {
+  render(
+    <MemoryRouter initialEntries={['/no-such-page']}>
+      <App />
+    </MemoryRouter>,
+  )
+
+  expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Go to the dashboard' })).toHaveAttribute('href', '/')
+})
