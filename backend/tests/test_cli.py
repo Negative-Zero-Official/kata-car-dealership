@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import pytest
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import cli
@@ -77,6 +78,22 @@ def test_seed_demo_loads_demo_vehicles_with_some_out_of_stock(
     assert exit_code == 0
     assert len(vehicles) == len(DEMO_VEHICLES)
     assert any(vehicle.quantity == 0 for vehicle in vehicles)
+
+
+def test_seed_demo_that_fails_midway_leaves_the_inventory_empty(
+    settings: Settings, session_factory: sessionmaker[Session], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A partial seed would make every later run skip as "not empty", so it must be all or nothing.
+    valid = DEMO_VEHICLES[0]
+    missing_price = valid._replace(price=None)
+    monkeypatch.setattr(cli, "DEMO_VEHICLES", (valid, missing_price))
+
+    with pytest.raises(IntegrityError):
+        cli.seed_demo(settings)
+
+    with session_factory() as session:
+        count = session.scalar(select(func.count()).select_from(Vehicle))
+    assert count == 0
 
 
 def test_seed_demo_skips_inventory_that_is_not_empty(
