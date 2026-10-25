@@ -84,3 +84,25 @@ def test_purchase_fails_when_stock_is_insufficient(
     assert response.json() == {"detail": "Vehicle is out of stock"}
     listing = client.get("/api/vehicles", headers=auth_headers(user))
     assert listing.json()[0]["quantity"] == stock
+
+
+def test_purchasing_unknown_vehicle_returns_404(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+
+    response = client.post("/api/vehicles/999/purchase", headers=auth_headers(user))
+
+    assert response.status_code == 404
+
+
+def test_purchasing_vehicle_without_token_returns_401(
+    client: TestClient, make_vehicle: Callable[..., Vehicle]
+) -> None:
+    vehicle = make_vehicle(quantity=5)
+
+    response = client.post(f"/api/vehicles/{vehicle.id}/purchase")
+
+    assert response.status_code == 401
