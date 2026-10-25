@@ -18,12 +18,7 @@ export function PurchaseButton({ vehicle, onPurchased, onError }: PurchaseButton
   }
 
   return (
-    <button
-      type="button"
-      disabled={soldOut}
-      onClick={purchase}
-      className="mt-3 rounded bg-blue-700 px-4 py-2 text-white disabled:bg-gray-400"
-    >
+    <button type="button" disabled={soldOut} onClick={purchase} className="btn-primary w-full">
       {soldOut ? 'Sold out' : 'Purchase'}
     </button>
   )

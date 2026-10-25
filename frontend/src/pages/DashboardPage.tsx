@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import {
   deleteVehicle,
   listVehicles,
@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../auth/AuthContext'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FilterBar } from '../components/FilterBar'
+import { Toast } from '../components/Toast'
 import { VehicleCard } from '../components/VehicleCard'
 import { VehicleFormModal } from '../components/VehicleFormModal'
 
@@ -16,6 +17,31 @@ type State =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'loaded'; vehicles: Vehicle[] }
+
+const CARD_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4'
+
+function LoadingCards() {
+  return (
+    <div role="status">
+      <span className="sr-only">Loading vehicles…</span>
+      <div aria-hidden="true" className={CARD_GRID}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <div key={i} className="panel flex flex-col gap-4 p-5 motion-safe:animate-pulse">
+            <div className="flex justify-between">
+              <div className="space-y-2">
+                <div className="h-3 w-16 rounded bg-line" />
+                <div className="h-6 w-28 rounded bg-line" />
+              </div>
+              <div className="h-7 w-20 rounded bg-line" />
+            </div>
+            <div className="h-8 w-32 rounded bg-line" />
+            <div className="h-10 rounded bg-line" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function DashboardPage() {
   const { isAdmin } = useAuth()
@@ -26,6 +52,10 @@ export function DashboardPage() {
   // null while closed; { vehicle } edits that vehicle, {} adds a new one.
   const [form, setForm] = useState<{ vehicle?: Vehicle } | null>(null)
   const [deleting, setDeleting] = useState<Vehicle | null>(null)
+  // The filter panel is a sidebar on wide screens and a drawer on narrow ones.
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const filtersToggle = useRef<HTMLButtonElement>(null)
+  const filtersPanel = useRef<HTMLElement>(null)
 
   useEffect(() => {
     let current = true
@@ -38,18 +68,47 @@ export function DashboardPage() {
     }
   }, [attempt])
 
+  useEffect(() => {
+    if (filtersOpen) {
+      filtersPanel.current?.querySelector('input')?.focus()
+    }
+  }, [filtersOpen])
+
+  const dismissToast = useCallback(() => setToast(null), [])
+
+  function closeFilters() {
+    setFiltersOpen(false)
+    filtersToggle.current?.focus()
+  }
+
+  function handleFiltersKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (filtersOpen && event.key === 'Escape') {
+      closeFilters()
+    }
+  }
+
   function retry() {
     setState({ status: 'loading' })
     setAttempt((n) => n + 1)
   }
 
   async function search(filter: VehicleFilter) {
+    if (filtersOpen) {
+      closeFilters()
+    }
     setState({ status: 'loading' })
     try {
       setState({ status: 'loaded', vehicles: await searchVehicles(filter) })
     } catch {
       setState({ status: 'error' })
     }
+  }
+
+  function clearFilters() {
+    if (filtersOpen) {
+      closeFilters()
+    }
+    retry()
   }
 
   // Replaces the vehicle with the same id, or appends it if it is new.
@@ -92,53 +151,104 @@ export function DashboardPage() {
     }
   }
 
+  const drawerClasses = filtersOpen
+    ? 'max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-[min(22rem,88vw)] max-lg:overflow-y-auto max-lg:rounded-none max-lg:shadow-xl motion-safe:max-lg:animate-[slide-in_180ms_ease-out]'
+    : 'max-lg:hidden'
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Vehicles</h2>
-        {isAdmin && (
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-10">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-4xl font-semibold">Vehicles</h2>
+        <div className="flex gap-2">
           <button
+            ref={filtersToggle}
             type="button"
-            onClick={() => setForm({})}
-            className="rounded bg-blue-700 px-4 py-2 text-white"
+            onClick={() => setFiltersOpen(true)}
+            aria-expanded={filtersOpen}
+            aria-controls="vehicle-filters"
+            className="btn-secondary lg:hidden"
           >
-            Add vehicle
+            Filters
           </button>
-        )}
-      </div>
-      <FilterBar onSearch={search} onClear={retry} />
-      {state.status === 'loading' && <p role="status">Loading vehicles…</p>}
-      {state.status === 'error' && (
-        <div role="alert" className="flex items-center gap-4">
-          <p>Could not load vehicles.</p>
-          <button type="button" onClick={retry} className="rounded border px-3 py-1">
-            Retry
-          </button>
+          {isAdmin && (
+            <button type="button" onClick={() => setForm({})} className="btn-primary">
+              Add vehicle
+            </button>
+          )}
         </div>
-      )}
-      {state.status === 'loaded' &&
-        (state.vehicles.length === 0 ? (
-          <p>No vehicles yet</p>
-        ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {state.vehicles.map((vehicle) => (
-              <VehicleCard
-                key={vehicle.id}
-                vehicle={vehicle}
-                onUpdated={handleUpdated}
-                onError={setToast}
-                admin={
-                  isAdmin
-                    ? {
-                        onEdit: () => setForm({ vehicle }),
-                        onDelete: () => setDeleting(vehicle),
-                      }
-                    : undefined
-                }
-              />
+      </div>
+
+      <div className="lg:grid lg:grid-cols-[16rem_1fr] lg:items-start lg:gap-8">
+        {filtersOpen && (
+          <div
+            aria-hidden="true"
+            onClick={closeFilters}
+            className="fixed inset-0 z-40 bg-ink/50 lg:hidden"
+          />
+        )}
+        <aside
+          id="vehicle-filters"
+          ref={filtersPanel}
+          aria-labelledby="vehicle-filters-title"
+          onKeyDown={handleFiltersKeyDown}
+          className={`panel p-5 lg:sticky lg:top-6 ${drawerClasses}`}
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h3 id="vehicle-filters-title" className="font-display text-xl font-semibold">
+              Filters
+            </h3>
+            <button type="button" onClick={closeFilters} className="btn-quiet lg:hidden">
+              Close filters
+            </button>
+          </div>
+          <FilterBar onSearch={search} onClear={clearFilters} />
+        </aside>
+
+        <section aria-label="Vehicle list" className="mt-6 lg:mt-0">
+          {state.status === 'loading' && <LoadingCards />}
+          {state.status === 'error' && (
+            <div role="alert" className="panel flex flex-wrap items-center gap-4 p-5">
+              <p className="flex-1">
+                Could not load vehicles. Check that the server is running, then try again.
+              </p>
+              <button type="button" onClick={retry} className="btn-secondary">
+                Retry
+              </button>
+            </div>
+          )}
+          {state.status === 'loaded' &&
+            (state.vehicles.length === 0 ? (
+              <div className="panel border-dashed p-10 text-center">
+                <p className="font-display text-2xl font-semibold">No vehicles yet</p>
+                <p className="mt-1 text-muted">
+                  {isAdmin
+                    ? 'Add a vehicle to start the inventory.'
+                    : 'Clear the filters or check back later.'}
+                </p>
+              </div>
+            ) : (
+              <ul className={CARD_GRID}>
+                {state.vehicles.map((vehicle) => (
+                  <VehicleCard
+                    key={vehicle.id}
+                    vehicle={vehicle}
+                    onUpdated={handleUpdated}
+                    onError={setToast}
+                    admin={
+                      isAdmin
+                        ? {
+                            onEdit: () => setForm({ vehicle }),
+                            onDelete: () => setDeleting(vehicle),
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+              </ul>
             ))}
-          </ul>
-        ))}
+        </section>
+      </div>
+
       {form && (
         <VehicleFormModal
           vehicle={form.vehicle}
@@ -149,19 +259,13 @@ export function DashboardPage() {
       {deleting && (
         <ConfirmDialog
           title={`Delete ${deleting.make} ${deleting.model}?`}
+          description="It disappears from the inventory for everyone. This can't be undone."
           confirmLabel="Delete vehicle"
           onConfirm={() => confirmDelete(deleting)}
           onCancel={() => setDeleting(null)}
         />
       )}
-      {toast && (
-        <p
-          role="alert"
-          className="fixed right-4 bottom-4 rounded bg-red-700 px-4 py-3 text-white shadow"
-        >
-          {toast}
-        </p>
-      )}
+      {toast && <Toast message={toast} onDismiss={dismissToast} />}
     </main>
   )
 }

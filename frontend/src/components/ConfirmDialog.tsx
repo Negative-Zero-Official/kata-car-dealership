@@ -1,35 +1,34 @@
+import { Modal } from './Modal'
+
 interface ConfirmDialogProps {
   title: string
+  description?: string
   confirmLabel: string
   onConfirm: () => void
   onCancel: () => void
 }
 
-export function ConfirmDialog({ title, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        className="w-full max-w-sm rounded bg-white p-6"
-      >
-        <h3 id="confirm-dialog-title" className="mb-4 text-lg font-semibold">
-          {title}
-        </h3>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onCancel} className="rounded border px-4 py-2">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="rounded bg-red-700 px-4 py-2 text-white"
-          >
-            {confirmLabel}
-          </button>
-        </div>
+    <Modal role="alertdialog" labelledBy="confirm-dialog-title" onClose={onCancel}>
+      <h3 id="confirm-dialog-title" className="font-display text-2xl font-semibold">
+        {title}
+      </h3>
+      {description && <p className="mt-2 text-muted">{description}</p>}
+      <div className="mt-6 flex justify-end gap-2">
+        <button type="button" onClick={onCancel} className="btn-secondary">
+          Cancel
+        </button>
+        <button type="button" onClick={onConfirm} className="btn-danger">
+          {confirmLabel}
+        </button>
       </div>
-    </div>
+    </Modal>
   )
 }

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { createVehicle, updateVehicle, type Vehicle } from '../api/vehicles'
+import { Modal } from './Modal'
 
 interface VehicleFormModalProps {
   // Given a vehicle the form edits its details; without one it adds a new vehicle.
@@ -74,21 +75,23 @@ export function VehicleFormModal({ vehicle, onSaved, onCancel }: VehicleFormModa
   function field(name: FieldName, label: string, numeric?: { step: string }) {
     const errorId = `vehicle-${name}-error`
     return (
-      <div className="flex flex-col gap-1 text-sm">
-        <label className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
+        <label className="field">
           {label}
           <input
             type={numeric ? 'number' : 'text'}
             step={numeric?.step}
+            min={numeric ? '0' : undefined}
+            inputMode={numeric ? (numeric.step === '1' ? 'numeric' : 'decimal') : undefined}
             value={fields[name]}
             onChange={(e) => setFields({ ...fields, [name]: e.target.value })}
             aria-invalid={errors[name] !== undefined}
             aria-describedby={errors[name] ? errorId : undefined}
-            className="rounded border px-3 py-2"
+            className="input"
           />
         </label>
         {errors[name] && (
-          <span id={errorId} className="text-red-700">
+          <span id={errorId} className="field-error">
             {errors[name]}
           </span>
         )}
@@ -97,42 +100,42 @@ export function VehicleFormModal({ vehicle, onSaved, onCancel }: VehicleFormModa
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="vehicle-form-title"
-        className="w-full max-w-md rounded bg-white p-6"
+    <Modal labelledBy="vehicle-form-title" onClose={onCancel}>
+      <h3 id="vehicle-form-title" className="font-display text-2xl font-semibold">
+        {title}
+      </h3>
+      {editing && (
+        <p className="mt-1 text-sm text-muted">Change stock with Restock on the card.</p>
+      )}
+      <form
+        aria-label={title}
+        noValidate
+        onSubmit={handleSubmit}
+        className="mt-5 flex flex-col gap-4"
       >
-        <h3 id="vehicle-form-title" className="mb-4 text-lg font-semibold">
-          {title}
-        </h3>
-        <form
-          aria-label={title}
-          noValidate
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-3"
-        >
+        <div className="grid gap-4 sm:grid-cols-2">
           {field('make', 'Make')}
           {field('model', 'Model')}
-          {field('category', 'Category')}
+        </div>
+        {field('category', 'Category')}
+        <div className="grid gap-4 sm:grid-cols-2">
           {field('price', 'Price', { step: '0.01' })}
           {!editing && field('quantity', 'Quantity', { step: '1' })}
-          {saveError && (
-            <p role="alert" className="text-red-700">
-              {saveError}
-            </p>
-          )}
-          <div className="mt-2 flex justify-end gap-2">
-            <button type="button" onClick={onCancel} className="rounded border px-4 py-2">
-              Cancel
-            </button>
-            <button type="submit" className="rounded bg-blue-700 px-4 py-2 text-white">
-              Save vehicle
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        {saveError && (
+          <p role="alert" className="field-error">
+            {saveError}
+          </p>
+        )}
+        <div className="mt-2 flex justify-end gap-2">
+          <button type="button" onClick={onCancel} className="btn-secondary">
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary">
+            Save vehicle
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }

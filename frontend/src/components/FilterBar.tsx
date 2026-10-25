@@ -50,63 +50,62 @@ export function FilterBar({ onSearch, onClear }: FilterBarProps) {
     onClear()
   }
 
-  const inputClass = 'rounded border px-3 py-2'
-
   return (
-    <form
-      role="search"
-      onSubmit={handleSubmit}
-      className="mb-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:items-end"
-    >
-      <label className="flex flex-col gap-1 text-sm">
+    <form role="search" onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <label className="field">
         Make
-        <input {...field('make')} className={inputClass} />
+        <input {...field('make')} className="input" />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="field">
         Model
-        <input {...field('model')} className={inputClass} />
+        <input {...field('model')} className="input" />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="field">
         Category
-        <input {...field('category')} className={inputClass} />
+        <input {...field('category')} className="input" />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
-        Min price
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          inputMode="decimal"
-          {...field('min_price')}
-          className={inputClass}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        Max price
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          inputMode="decimal"
-          {...field('max_price')}
-          aria-invalid={priceError !== null}
-          aria-describedby={priceError ? 'max-price-error' : undefined}
-          className={inputClass}
-        />
-      </label>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="sr-only">Price range</legend>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="field">
+            Min price
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              {...field('min_price')}
+              className="input w-full"
+            />
+          </label>
+          <label className="field">
+            Max price
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              {...field('max_price')}
+              aria-invalid={priceError !== null}
+              aria-describedby={priceError ? 'max-price-error' : undefined}
+              className="input w-full"
+            />
+          </label>
+        </div>
+        {priceError && (
+          <p id="max-price-error" className="field-error">
+            {priceError}
+          </p>
+        )}
+      </fieldset>
       <div className="flex gap-2">
-        <button type="submit" className="rounded bg-blue-700 px-4 py-2 text-white">
+        <button type="submit" className="btn-primary flex-1">
           Search
         </button>
-        <button type="button" onClick={handleClear} className="rounded border px-4 py-2">
+        <button type="button" onClick={handleClear} className="btn-secondary">
           Clear
         </button>
       </div>
-      {priceError && (
-        <p id="max-price-error" className="text-sm text-red-700 sm:col-span-3 lg:col-span-6">
-          {priceError}
-        </p>
-      )}
     </form>
   )
 }

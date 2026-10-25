@@ -22,20 +22,21 @@ export function RestockControl({ vehicle, onRestocked, onError }: RestockControl
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 flex items-end gap-2">
-      <div className="flex flex-col gap-1 text-sm">
+    <form onSubmit={handleSubmit} className="flex items-end gap-2">
+      <div className="field min-w-0 flex-1">
         <label htmlFor={inputId}>Restock quantity</label>
         <input
           id={inputId}
           type="number"
           min="1"
           step="1"
+          inputMode="numeric"
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
-          className="w-24 rounded border px-3 py-2"
+          className="input w-full"
         />
       </div>
-      <button type="submit" className="rounded border px-4 py-2">
+      <button type="submit" className="btn-secondary">
         Restock
       </button>
     </form>

@@ -23,33 +23,51 @@ interface VehicleCardProps {
   admin?: AdminActions
 }
 
+// Laid out like a dealer's window sticker: model and price up top, a hang tag for
+// stock, and the admin tools below a perforated tear-off line.
 export function VehicleCard({ vehicle, onUpdated, onError, admin }: VehicleCardProps) {
+  const soldOut = vehicle.quantity === 0
+  const tagColours = soldOut ? 'bg-sold text-white' : 'bg-tag text-ink'
+
   return (
-    <li className="rounded border p-4">
-      <h3 className="text-lg font-semibold">
-        {vehicle.make} {vehicle.model}
-      </h3>
-      <p className="text-sm text-gray-600">{vehicle.category}</p>
-      <p className="mt-2 font-medium">{formatPrice(vehicle.price)}</p>
-      <p className="text-sm">{vehicle.quantity} in stock</p>
-      <div className="flex flex-wrap gap-2">
+    <li className="panel flex flex-col">
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="min-w-0">
+            <span className="block text-sm font-medium text-muted">{vehicle.make}</span>{' '}
+            <span className="block truncate font-display text-2xl leading-tight font-semibold">
+              {vehicle.model}
+            </span>
+          </h3>
+          <p className={`hang-tag shrink-0 ${tagColours}`}>{vehicle.quantity} in stock</p>
+        </div>
+        <div className="mt-auto flex items-end justify-between gap-3">
+          <p className="font-display text-3xl font-semibold tabular-nums">
+            {formatPrice(vehicle.price)}
+          </p>
+          <p className="rounded-full border border-line px-2.5 py-0.5 text-sm text-muted">
+            {vehicle.category}
+          </p>
+        </div>
         <PurchaseButton vehicle={vehicle} onPurchased={onUpdated} onError={onError} />
-        {admin && (
-          <>
-            <button type="button" onClick={admin.onEdit} className="mt-3 rounded border px-4 py-2">
+      </div>
+      {admin && (
+        <div className="flex flex-col gap-3 border-t-2 border-dashed border-line p-5">
+          <RestockControl vehicle={vehicle} onRestocked={onUpdated} onError={onError} />
+          <div className="flex justify-end gap-1">
+            <button type="button" onClick={admin.onEdit} className="btn-quiet">
               Edit
             </button>
             <button
               type="button"
               onClick={admin.onDelete}
-              className="mt-3 rounded border border-red-700 px-4 py-2 text-red-700"
+              className="btn-quiet text-sold hover:bg-sold/10"
             >
               Delete
             </button>
-          </>
-        )}
-      </div>
-      {admin && <RestockControl vehicle={vehicle} onRestocked={onUpdated} onError={onError} />}
+          </div>
+        </div>
+      )}
     </li>
   )
 }

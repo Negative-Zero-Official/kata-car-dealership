@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 
 export function LoginPage() {
@@ -24,49 +24,54 @@ export function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm px-4 py-12">
-      <h1 className="mb-6 text-2xl font-semibold">Log in</h1>
-      {notice && (
-        <p role="status" className="mb-4 rounded bg-amber-100 px-3 py-2 text-amber-900">
-          {notice}
-        </p>
-      )}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          Email
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded border px-3 py-2"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          Password
-          <input
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded border px-3 py-2"
-          />
-        </label>
-        {error && (
-          <p role="alert" className="text-red-700">
-            {error}
+    <main className="mx-auto max-w-sm px-4 py-12 sm:py-20">
+      <div className="panel p-6 sm:p-8">
+        <h2 className="font-display text-3xl font-semibold">Log in</h2>
+        <p className="mt-1 text-muted">Log in to browse and buy vehicles.</p>
+        {notice && (
+          <p role="status" className="mt-5 rounded border-l-4 border-tag bg-tag/15 px-3 py-2">
+            {notice}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-60"
-        >
-          {submitting ? 'Logging in…' : 'Log in'}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+          <label className="field">
+            Email
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input"
+            />
+          </label>
+          <label className="field">
+            Password
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input"
+            />
+          </label>
+          {error && (
+            <p role="alert" className="field-error">
+              {error}
+            </p>
+          )}
+          <button type="submit" disabled={submitting} className="btn-primary mt-2">
+            {submitting ? 'Logging in…' : 'Log in'}
+          </button>
+        </form>
+      </div>
+      <p className="mt-6 text-center text-sm text-muted">
+        New here?{' '}
+        <Link to="/register" className="font-semibold text-showroom underline-offset-2 hover:underline">
+          Create an account
+        </Link>
+      </p>
     </main>
   )
 }
