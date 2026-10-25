@@ -39,6 +39,38 @@ def test_admin_creates_vehicle_and_price_round_trips_as_string(
     }
 
 
+@pytest.mark.parametrize(
+    "price",
+    [
+        pytest.param("100", id="whole-number"),
+        pytest.param("100.5", id="one-decimal-place"),
+        pytest.param("1e2", id="scientific-notation"),
+    ],
+)
+def test_created_vehicle_price_is_returned_with_two_decimal_places(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+    price: str,
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+
+    response = client.post(
+        "/api/vehicles",
+        json={
+            "make": "Toyota",
+            "model": "Corolla",
+            "category": "sedan",
+            "price": price,
+            "quantity": 5,
+        },
+        headers=auth_headers(admin),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["price"] == f"{Decimal(price):.2f}"
+
+
 VEHICLE = {
     "make": "Toyota",
     "model": "Corolla",
@@ -463,6 +495,32 @@ def test_searching_with_no_match_returns_empty_list(
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_model"),
+    [
+        pytest.param("model=F_150", "F_150", id="underscore"),
+        pytest.param("model=100%25", "100%", id="percent"),
+    ],
+)
+def test_searching_treats_like_wildcards_in_the_query_literally(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+    query: str,
+    expected_model: str,
+) -> None:
+    user = make_user(email="alice@example.com")
+    match = make_vehicle(model=expected_model)
+    make_vehicle(model="FX150")
+    make_vehicle(model="1000")
+
+    response = client.get(f"/api/vehicles/search?{query}", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(match)]
 
 
 @pytest.mark.parametrize(

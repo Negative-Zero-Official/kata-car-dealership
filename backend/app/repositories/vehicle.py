@@ -1,4 +1,4 @@
-from sqlalchemy import select, update
+from sqlalchemy import exists, select, update
 from sqlalchemy.orm import Session
 
 from app.domain.vehicle_filter import VehicleFilter
@@ -13,6 +13,12 @@ class VehicleRepository:
         self.session.add(vehicle)
         self.session.commit()
         return vehicle
+
+    def add_all(self, vehicles: list[Vehicle]) -> list[Vehicle]:
+        # One commit, so either every vehicle is stored or none is.
+        self.session.add_all(vehicles)
+        self.session.commit()
+        return vehicles
 
     def get(self, vehicle_id: int) -> Vehicle | None:
         return self.session.get(Vehicle, vehicle_id)
@@ -44,6 +50,9 @@ class VehicleRepository:
         self.session.delete(vehicle)
         self.session.commit()
 
+    def any(self) -> bool:
+        return bool(self.session.scalar(select(exists().select_from(Vehicle))))
+
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         query = select(Vehicle).order_by(Vehicle.id).limit(limit).offset(offset)
         return list(self.session.scalars(query))
@@ -51,11 +60,11 @@ class VehicleRepository:
     def search(self, criteria: VehicleFilter) -> list[Vehicle]:
         query = select(Vehicle).order_by(Vehicle.id)
         if criteria.make is not None:
-            query = query.where(Vehicle.make.ilike(f"%{criteria.make}%"))
+            query = query.where(Vehicle.make.icontains(criteria.make, autoescape=True))
         if criteria.model is not None:
-            query = query.where(Vehicle.model.ilike(f"%{criteria.model}%"))
+            query = query.where(Vehicle.model.icontains(criteria.model, autoescape=True))
         if criteria.category is not None:
-            query = query.where(Vehicle.category.ilike(f"%{criteria.category}%"))
+            query = query.where(Vehicle.category.icontains(criteria.category, autoescape=True))
         if criteria.min_price is not None:
             query = query.where(Vehicle.price >= criteria.min_price)
         if criteria.max_price is not None:

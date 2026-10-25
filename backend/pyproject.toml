@@ -23,6 +23,9 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra"
 
+[tool.coverage.report]
+exclude_also = ['if __name__ == "__main__":']
+
 [tool.ruff]
 line-length = 100
 target-version = "py314"

@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from decimal import Decimal
 
 from app.domain.errors import InvalidPriceRange, VehicleNotFound
@@ -13,9 +14,10 @@ class VehicleService:
     def create(
         self, make: str, model: str, category: str, price: Decimal, quantity: int
     ) -> Vehicle:
-        return self.vehicles.add(
-            Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
-        )
+        return self.vehicles.add(_new_vehicle(make, model, category, price, quantity))
+
+    def create_many(self, rows: Iterable[tuple[str, str, str, Decimal, int]]) -> list[Vehicle]:
+        return self.vehicles.add_all([_new_vehicle(*row) for row in rows])
 
     def update(
         self, vehicle_id: int, make: str, model: str, category: str, price: Decimal
@@ -30,6 +32,9 @@ class VehicleService:
     def delete(self, vehicle_id: int) -> None:
         vehicle = self._get(vehicle_id)
         self.vehicles.delete(vehicle)
+
+    def has_any(self) -> bool:
+        return self.vehicles.any()
 
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         return self.vehicles.list_all(limit=limit, offset=offset)
@@ -48,3 +53,7 @@ class VehicleService:
         if vehicle is None:
             raise VehicleNotFound
         return vehicle
+
+
+def _new_vehicle(make: str, model: str, category: str, price: Decimal, quantity: int) -> Vehicle:
+    return Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)

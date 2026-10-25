@@ -1,6 +1,8 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.domain.errors import EmailAlreadyRegistered
 from app.models import User
 
 
@@ -10,7 +12,12 @@ class UserRepository:
 
     def add(self, user: User) -> User:
         self.session.add(user)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError as exc:
+            # The unique email constraint catches a sign-up that raced past the existence check.
+            self.session.rollback()
+            raise EmailAlreadyRegistered(user.email) from exc
         return user
 
     def get_by_email(self, email: str) -> User | None:

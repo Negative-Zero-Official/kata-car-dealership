@@ -5,6 +5,9 @@ from app.models import User
 from app.repositories.user import UserRepository
 from app.services.token import TokenService
 
+# Checked when the email is unknown, so login takes as long as for a wrong password.
+UNKNOWN_USER_HASH = PasswordHasher().hash("unknown-user")
+
 
 def normalise_email(email: str) -> str:
     return email.lower()
@@ -37,6 +40,7 @@ class AuthService:
 
     def login(self, email: str, password: str) -> tuple[str, User]:
         user = self.users.get_by_email(normalise_email(email))
-        if user is None or not self.hasher.verify(password, user.hashed_password):
+        hashed = user.hashed_password if user is not None else UNKNOWN_USER_HASH
+        if not self.hasher.verify(password, hashed) or user is None:
             raise InvalidCredentials()
         return self.tokens.issue(user), user

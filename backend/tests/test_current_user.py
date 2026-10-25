@@ -97,3 +97,30 @@ def test_protected_route_rejects_token_for_deleted_user_with_401(
     response = client.get("/api/test/me", headers=headers)
 
     assert response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "claims",
+    [
+        pytest.param({"sub": "USER_ID", "role": "user"}, id="no-expiry"),
+        pytest.param({"role": "user", "exp": "FUTURE"}, id="no-subject"),
+        pytest.param({"sub": "not-a-number", "role": "user", "exp": "FUTURE"}, id="bad-subject"),
+    ],
+)
+def test_protected_route_rejects_token_missing_required_claims_with_401(
+    client: TestClient,
+    settings: Settings,
+    make_user: Callable[..., User],
+    claims: dict[str, str],
+) -> None:
+    user = make_user()
+    values = {"USER_ID": str(user.id), "FUTURE": datetime.now(UTC) + timedelta(minutes=5)}
+    token = jwt.encode(
+        {name: values.get(value, value) for name, value in claims.items()},
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+    response = client.get("/api/test/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
