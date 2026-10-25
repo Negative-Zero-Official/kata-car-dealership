@@ -412,3 +412,54 @@ def test_searching_by_price_range_is_inclusive(
 
     assert response.status_code == 200
     assert tuple(v["price"] for v in response.json()) == expected_prices
+
+
+def test_searching_with_several_filters_returns_only_vehicles_matching_all(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    match = make_vehicle(make="Toyota", category="suv", price=Decimal("30000.00"))
+    make_vehicle(make="Honda", category="suv", price=Decimal("30000.00"))
+    make_vehicle(make="Toyota", category="sedan", price=Decimal("30000.00"))
+    make_vehicle(make="Toyota", category="suv", price=Decimal("50000.00"))
+
+    response = client.get(
+        "/api/vehicles/search?make=toyota&category=suv&max_price=40000",
+        headers=auth_headers(user),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(match)]
+
+
+def test_searching_without_filters_returns_all_vehicles(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    created = [make_vehicle(), make_vehicle(make="Honda", model="Civic")]
+
+    response = client.get("/api/vehicles/search", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(vehicle) for vehicle in created]
+
+
+def test_searching_with_no_match_returns_empty_list(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+    make_vehicle()
+
+    response = client.get("/api/vehicles/search?make=ferrari", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == []
