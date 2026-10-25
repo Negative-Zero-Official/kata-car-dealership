@@ -1,22 +1,21 @@
-from decimal import Decimal
-
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.money import Money
 
-class VehicleCreate(BaseModel):
+
+class VehicleBase(BaseModel):
     make: str
     model: str
     category: str
-    price: Decimal
+    price: Money
     quantity: int
 
 
-class VehicleResponse(BaseModel):
+class VehicleCreate(VehicleBase):
+    pass
+
+
+class VehicleRead(VehicleBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    make: str
-    model: str
-    category: str
-    price: Decimal
-    quantity: int
