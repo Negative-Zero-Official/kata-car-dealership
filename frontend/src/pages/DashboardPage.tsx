@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { listVehicles, type Vehicle } from '../api/vehicles'
+import { listVehicles, searchVehicles, type Vehicle, type VehicleFilter } from '../api/vehicles'
+import { FilterBar } from '../components/FilterBar'
 import { VehicleCard } from '../components/VehicleCard'
 
 type State =
@@ -29,6 +30,15 @@ export function DashboardPage() {
     setAttempt((n) => n + 1)
   }
 
+  async function search(filter: VehicleFilter) {
+    setState({ status: 'loading' })
+    try {
+      setState({ status: 'loaded', vehicles: await searchVehicles(filter) })
+    } catch {
+      setState({ status: 'error' })
+    }
+  }
+
   function replaceVehicle(updated: Vehicle) {
     setToast(null)
     setState((current) =>
@@ -44,6 +54,7 @@ export function DashboardPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <h2 className="mb-6 text-2xl font-semibold">Vehicles</h2>
+      <FilterBar onSearch={search} onClear={retry} />
       {state.status === 'loading' && <p role="status">Loading vehicles…</p>}
       {state.status === 'error' && (
         <div role="alert" className="flex items-center gap-4">
