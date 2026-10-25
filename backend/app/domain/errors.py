@@ -28,3 +28,7 @@ class VehicleNotFound(DomainError):
 
 class InvalidPriceRange(DomainError):
     detail = "min_price must not exceed max_price"
+
+
+class InsufficientStock(DomainError):
+    detail = "Vehicle is out of stock"
