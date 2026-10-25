@@ -171,3 +171,24 @@ def test_listing_vehicles_with_limit_over_100_returns_422(
     response = client.get("/api/vehicles?limit=101", headers=auth_headers(user))
 
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        pytest.param("limit=0", id="zero-limit"),
+        pytest.param("limit=-1", id="negative-limit"),
+        pytest.param("offset=-1", id="negative-offset"),
+    ],
+)
+def test_listing_vehicles_with_out_of_range_pagination_returns_422(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+    query: str,
+) -> None:
+    user = make_user(email="alice@example.com")
+
+    response = client.get(f"/api/vehicles?{query}", headers=auth_headers(user))
+
+    assert response.status_code == 422
