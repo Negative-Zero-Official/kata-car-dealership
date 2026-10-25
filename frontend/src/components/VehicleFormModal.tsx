@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { createVehicle, type Vehicle } from '../api/vehicles'
+import { createVehicle, updateVehicle, type Vehicle } from '../api/vehicles'
 
 interface VehicleFormModalProps {
+  // Given a vehicle the form edits its details; without one it adds a new vehicle.
+  vehicle?: Vehicle
   onSaved: (vehicle: Vehicle) => void
   onCancel: () => void
 }
@@ -22,37 +24,53 @@ function isPositivePrice(value: string): boolean {
   return /^\d+(\.\d{1,2})?$/.test(value) && /[1-9]/.test(value)
 }
 
-function validate(fields: Record<FieldName, string>): Errors {
+function validate(fields: Record<FieldName, string>, withQuantity: boolean): Errors {
   const errors: Errors = {}
   if (!fields.make.trim()) errors.make = 'Enter a make'
   if (!fields.model.trim()) errors.model = 'Enter a model'
   if (!fields.category.trim()) errors.category = 'Enter a category'
   if (!isPositivePrice(fields.price)) errors.price = 'Enter a price above 0'
-  if (!/^\d+$/.test(fields.quantity)) errors.quantity = 'Enter a whole number of 0 or more'
+  if (withQuantity && !/^\d+$/.test(fields.quantity)) {
+    errors.quantity = 'Enter a whole number of 0 or more'
+  }
   return errors
 }
 
-export function VehicleFormModal({ onSaved, onCancel }: VehicleFormModalProps) {
-  const [fields, setFields] = useState(EMPTY)
+export function VehicleFormModal({ vehicle, onSaved, onCancel }: VehicleFormModalProps) {
+  const editing = vehicle !== undefined
+  const title = editing ? 'Edit vehicle' : 'Add vehicle'
+  const [fields, setFields] = useState(() =>
+    vehicle
+      ? {
+          make: vehicle.make,
+          model: vehicle.model,
+          category: vehicle.category,
+          price: vehicle.price,
+          quantity: String(vehicle.quantity),
+        }
+      : EMPTY,
+  )
   const [errors, setErrors] = useState<Errors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const found = validate(fields)
+    const found = validate(fields, !editing)
     setErrors(found)
     if (Object.keys(found).length > 0) {
       return
     }
+    const details = {
+      make: fields.make.trim(),
+      model: fields.model.trim(),
+      category: fields.category.trim(),
+      price: fields.price,
+    }
     try {
       onSaved(
-        await createVehicle({
-          make: fields.make.trim(),
-          model: fields.model.trim(),
-          category: fields.category.trim(),
-          price: fields.price,
-          quantity: Number(fields.quantity),
-        }),
+        vehicle
+          ? await updateVehicle(vehicle.id, details)
+          : await createVehicle({ ...details, quantity: Number(fields.quantity) }),
       )
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Could not save the vehicle. Try again.')
@@ -93,10 +111,10 @@ export function VehicleFormModal({ onSaved, onCancel }: VehicleFormModalProps) {
         className="w-full max-w-md rounded bg-white p-6"
       >
         <h3 id="vehicle-form-title" className="mb-4 text-lg font-semibold">
-          Add vehicle
+          {title}
         </h3>
         <form
-          aria-label="Add vehicle"
+          aria-label={title}
           noValidate
           onSubmit={handleSubmit}
           className="flex flex-col gap-3"
@@ -105,7 +123,7 @@ export function VehicleFormModal({ onSaved, onCancel }: VehicleFormModalProps) {
           {field('model', 'Model')}
           {field('category', 'Category')}
           {field('price', 'Price', { step: '0.01' })}
-          {field('quantity', 'Quantity', { step: '1' })}
+          {!editing && field('quantity', 'Quantity', { step: '1' })}
           {saveError && (
             <p role="alert" className="text-red-700">
               {saveError}

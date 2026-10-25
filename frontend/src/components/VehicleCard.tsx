@@ -12,9 +12,11 @@ interface VehicleCardProps {
   vehicle: Vehicle
   onPurchased: (vehicle: Vehicle) => void
   onPurchaseError: (message: string) => void
+  // Only passed for admins.
+  onEdit?: () => void
 }
 
-export function VehicleCard({ vehicle, onPurchased, onPurchaseError }: VehicleCardProps) {
+export function VehicleCard({ vehicle, onPurchased, onPurchaseError, onEdit }: VehicleCardProps) {
   return (
     <li className="rounded border p-4">
       <h3 className="text-lg font-semibold">
@@ -23,7 +25,14 @@ export function VehicleCard({ vehicle, onPurchased, onPurchaseError }: VehicleCa
       <p className="text-sm text-gray-600">{vehicle.category}</p>
       <p className="mt-2 font-medium">{formatPrice(vehicle.price)}</p>
       <p className="text-sm">{vehicle.quantity} in stock</p>
-      <PurchaseButton vehicle={vehicle} onPurchased={onPurchased} onError={onPurchaseError} />
+      <div className="flex gap-2">
+        <PurchaseButton vehicle={vehicle} onPurchased={onPurchased} onError={onPurchaseError} />
+        {onEdit && (
+          <button type="button" onClick={onEdit} className="mt-3 rounded border px-4 py-2">
+            Edit
+          </button>
+        )}
+      </div>
     </li>
   )
 }

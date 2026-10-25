@@ -17,6 +17,7 @@ export function DashboardPage() {
   const [attempt, setAttempt] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<Vehicle | null>(null)
 
   useEffect(() => {
     let current = true
@@ -64,6 +65,11 @@ export function DashboardPage() {
     )
   }
 
+  function saveEdit(updated: Vehicle) {
+    setEditing(null)
+    replaceVehicle(updated)
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -99,11 +105,19 @@ export function DashboardPage() {
                 vehicle={vehicle}
                 onPurchased={replaceVehicle}
                 onPurchaseError={setToast}
+                onEdit={isAdmin ? () => setEditing(vehicle) : undefined}
               />
             ))}
           </ul>
         ))}
       {adding && <VehicleFormModal onSaved={addVehicle} onCancel={() => setAdding(false)} />}
+      {editing && (
+        <VehicleFormModal
+          vehicle={editing}
+          onSaved={saveEdit}
+          onCancel={() => setEditing(null)}
+        />
+      )}
       {toast && (
         <p
           role="alert"
