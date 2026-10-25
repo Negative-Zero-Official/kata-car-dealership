@@ -206,3 +206,50 @@ test('a min price above the max price shows an inline error and sends no request
   expect(searched).toBe(false)
   expect(screen.getByRole('heading', { name: 'Honda CR-V' })).toBeInTheDocument()
 })
+
+test('Purchase asks for confirmation, showing the vehicle and price, before sending anything', async () => {
+  let purchased = false
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla])),
+    http.post('/api/vehicles/:id/purchase', () => {
+      purchased = true
+      return HttpResponse.json({ ...corolla, quantity: 4 })
+    }),
+  )
+  renderDashboard()
+  const card = await findCard('Toyota Corolla')
+  const user = userEvent.setup()
+
+  await user.click(card.getByRole('button', { name: 'Purchase' }))
+
+  const confirm = within(screen.getByRole('alertdialog', { name: 'Buy Toyota Corolla?' }))
+  expect(confirm.getByText(/\$25,000\.00/)).toBeInTheDocument()
+  expect(purchased).toBe(false)
+
+  await user.click(confirm.getByRole('button', { name: 'Cancel' }))
+
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  expect(card.getByText('5 in stock')).toBeInTheDocument()
+  expect(purchased).toBe(false)
+})
+
+test('confirming a purchase buys the vehicle and shows a success toast', async () => {
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla])),
+    http.post('/api/vehicles/:id/purchase', () =>
+      HttpResponse.json({ ...corolla, quantity: corolla.quantity - 1 }),
+    ),
+  )
+  renderDashboard()
+  const card = await findCard('Toyota Corolla')
+  const user = userEvent.setup()
+
+  await user.click(card.getByRole('button', { name: 'Purchase' }))
+  const confirm = within(screen.getByRole('alertdialog', { name: 'Buy Toyota Corolla?' }))
+  await user.click(confirm.getByRole('button', { name: 'Confirm purchase' }))
+
+  expect(await card.findByText('4 in stock')).toBeInTheDocument()
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  expect(screen.getByRole('status')).toHaveTextContent('Purchased Toyota Corolla')
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+})
