@@ -53,6 +53,21 @@ def test_register_rejects_duplicate_email_with_409(
     assert response.status_code == 409
 
 
+def test_register_racing_a_duplicate_past_the_existence_check_returns_409(
+    client: TestClient, make_user: Callable[..., User], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Two simultaneous sign-ups both see "no such email"; the second insert must still be a 409.
+    make_user(email="alice@example.com")
+    monkeypatch.setattr(UserRepository, "get_by_email", lambda self, email: None)
+
+    response = client.post(
+        "/api/auth/register", json={"email": "alice@example.com", "password": PASSWORD}
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Email already registered"}
+
+
 def test_register_rejects_email_differing_only_in_case_with_409(
     client: TestClient, make_user: Callable[..., User]
 ) -> None:
