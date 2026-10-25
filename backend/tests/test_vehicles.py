@@ -192,3 +192,28 @@ def test_listing_vehicles_with_out_of_range_pagination_returns_422(
     response = client.get(f"/api/vehicles?{query}", headers=auth_headers(user))
 
     assert response.status_code == 422
+
+
+def test_admin_updates_vehicle_details_and_quantity_is_unchanged(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    created = client.post("/api/vehicles", json=VEHICLE, headers=auth_headers(admin)).json()
+
+    response = client.put(
+        f"/api/vehicles/{created['id']}",
+        json={"make": "Honda", "model": "Civic", "category": "hatchback", "price": "21500.50"},
+        headers=auth_headers(admin),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": created["id"],
+        "make": "Honda",
+        "model": "Civic",
+        "category": "hatchback",
+        "price": "21500.50",
+        "quantity": 5,
+    }
