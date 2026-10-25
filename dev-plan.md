@@ -68,5 +68,5 @@ No production code without a failing test that makes it necessary.
 
 - [x] All kata requirement work end-to-end (user flow and admin flow)
 - [x] Tests pass with coverage report
-- [ ] README: overview, setup for backend and frontend, screenshots, test report, AI usage
+- [x] README: overview, setup for backend and frontend, screenshots, test report, AI usage
 - [x] `PROMPTS.md`
