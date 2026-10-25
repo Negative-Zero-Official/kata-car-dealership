@@ -18,7 +18,8 @@ import { formatPrice } from '../format'
 type State =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'loaded'; vehicles: Vehicle[] }
+  // filtered: the vehicles are search results rather than the whole inventory.
+  | { status: 'loaded'; vehicles: Vehicle[]; filtered: boolean }
 
 const CARD_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4'
 
@@ -63,7 +64,7 @@ export function DashboardPage() {
   useEffect(() => {
     let current = true
     listVehicles().then(
-      (vehicles) => current && setState({ status: 'loaded', vehicles }),
+      (vehicles) => current && setState({ status: 'loaded', vehicles, filtered: false }),
       () => current && setState({ status: 'error' }),
     )
     return () => {
@@ -105,7 +106,7 @@ export function DashboardPage() {
     }
     setState({ status: 'loading' })
     try {
-      setState({ status: 'loaded', vehicles: await searchVehicles(filter) })
+      setState({ status: 'loaded', vehicles: await searchVehicles(filter), filtered: true })
     } catch {
       setState({ status: 'error' })
     }
@@ -126,7 +127,7 @@ export function DashboardPage() {
       }
       const exists = current.vehicles.some((v) => v.id === saved.id)
       return {
-        status: 'loaded',
+        ...current,
         vehicles: exists
           ? current.vehicles.map((v) => (v.id === saved.id ? saved : v))
           : [...current.vehicles, saved],
@@ -160,7 +161,7 @@ export function DashboardPage() {
       await deleteVehicle(vehicle.id)
       setState((current) =>
         current.status === 'loaded'
-          ? { status: 'loaded', vehicles: current.vehicles.filter((v) => v.id !== vehicle.id) }
+          ? { ...current, vehicles: current.vehicles.filter((v) => v.id !== vehicle.id) }
           : current,
       )
     } catch (e) {
@@ -234,7 +235,14 @@ export function DashboardPage() {
             </div>
           )}
           {state.status === 'loaded' &&
-            (state.vehicles.length === 0 ? (
+            (state.vehicles.length === 0 && state.filtered ? (
+              <div className="panel border-dashed p-10 text-center">
+                <p className="font-display text-2xl font-semibold">
+                  No vehicles match these filters
+                </p>
+                <p className="mt-1 text-muted">Try different filters, or clear them.</p>
+              </div>
+            ) : state.vehicles.length === 0 ? (
               <div className="panel border-dashed p-10 text-center">
                 <p className="font-display text-2xl font-semibold">No vehicles yet</p>
                 <p className="mt-1 text-muted">
