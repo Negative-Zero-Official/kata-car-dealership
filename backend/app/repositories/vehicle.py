@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain.vehicle_filter import VehicleFilter
 from app.models import Vehicle
 
 
@@ -26,4 +27,10 @@ class VehicleRepository:
 
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         query = select(Vehicle).order_by(Vehicle.id).limit(limit).offset(offset)
+        return list(self.session.scalars(query))
+
+    def search(self, criteria: VehicleFilter) -> list[Vehicle]:
+        query = select(Vehicle).order_by(Vehicle.id)
+        if criteria.make is not None:
+            query = query.where(Vehicle.make.ilike(f"%{criteria.make}%"))
         return list(self.session.scalars(query))

@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 
 from app.dependencies import get_current_user, get_vehicle_service, require_admin
+from app.domain.vehicle_filter import VehicleFilter
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.services.vehicle import VehicleService
 
@@ -18,6 +19,12 @@ def list_vehicles(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[VehicleRead]:
     vehicles = service.list_all(limit=limit, offset=offset)
+    return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
+
+
+@router.get("/search", response_model=list[VehicleRead], dependencies=[Depends(get_current_user)])
+def search_vehicles(service: VehicleServiceDep, make: str | None = None) -> list[VehicleRead]:
+    vehicles = service.search(VehicleFilter(make=make))
     return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
 
 
