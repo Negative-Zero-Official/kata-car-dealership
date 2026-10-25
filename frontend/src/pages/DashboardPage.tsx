@@ -16,8 +16,8 @@ export function DashboardPage() {
   // Bumped by Retry to re-run the fetch effect.
   const [attempt, setAttempt] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<Vehicle | null>(null)
+  // null while closed; { vehicle } edits that vehicle, {} adds a new one.
+  const [form, setForm] = useState<{ vehicle?: Vehicle } | null>(null)
 
   useEffect(() => {
     let current = true
@@ -44,30 +44,30 @@ export function DashboardPage() {
     }
   }
 
-  function replaceVehicle(updated: Vehicle) {
+  // Replaces the vehicle with the same id, or appends it if it is new.
+  function upsertVehicle(saved: Vehicle) {
+    setState((current) => {
+      if (current.status !== 'loaded') {
+        return current
+      }
+      const exists = current.vehicles.some((v) => v.id === saved.id)
+      return {
+        status: 'loaded',
+        vehicles: exists
+          ? current.vehicles.map((v) => (v.id === saved.id ? saved : v))
+          : [...current.vehicles, saved],
+      }
+    })
+  }
+
+  function handlePurchased(updated: Vehicle) {
     setToast(null)
-    setState((current) =>
-      current.status === 'loaded'
-        ? {
-            status: 'loaded',
-            vehicles: current.vehicles.map((v) => (v.id === updated.id ? updated : v)),
-          }
-        : current,
-    )
+    upsertVehicle(updated)
   }
 
-  function addVehicle(created: Vehicle) {
-    setAdding(false)
-    setState((current) =>
-      current.status === 'loaded'
-        ? { status: 'loaded', vehicles: [...current.vehicles, created] }
-        : current,
-    )
-  }
-
-  function saveEdit(updated: Vehicle) {
-    setEditing(null)
-    replaceVehicle(updated)
+  function handleSaved(saved: Vehicle) {
+    setForm(null)
+    upsertVehicle(saved)
   }
 
   return (
@@ -77,7 +77,7 @@ export function DashboardPage() {
         {isAdmin && (
           <button
             type="button"
-            onClick={() => setAdding(true)}
+            onClick={() => setForm({})}
             className="rounded bg-blue-700 px-4 py-2 text-white"
           >
             Add vehicle
@@ -103,19 +103,18 @@ export function DashboardPage() {
               <VehicleCard
                 key={vehicle.id}
                 vehicle={vehicle}
-                onPurchased={replaceVehicle}
+                onPurchased={handlePurchased}
                 onPurchaseError={setToast}
-                onEdit={isAdmin ? () => setEditing(vehicle) : undefined}
+                onEdit={isAdmin ? () => setForm({ vehicle }) : undefined}
               />
             ))}
           </ul>
         ))}
-      {adding && <VehicleFormModal onSaved={addVehicle} onCancel={() => setAdding(false)} />}
-      {editing && (
+      {form && (
         <VehicleFormModal
-          vehicle={editing}
-          onSaved={saveEdit}
-          onCancel={() => setEditing(null)}
+          vehicle={form.vehicle}
+          onSaved={handleSaved}
+          onCancel={() => setForm(null)}
         />
       )}
       {toast && (

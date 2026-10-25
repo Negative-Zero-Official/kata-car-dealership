@@ -9,14 +9,17 @@ interface VehicleFormModalProps {
 }
 
 type FieldName = 'make' | 'model' | 'category' | 'price' | 'quantity'
+type Fields = Record<FieldName, string>
 type Errors = Partial<Record<FieldName, string>>
 
-const EMPTY: Record<FieldName, string> = {
-  make: '',
-  model: '',
-  category: '',
-  price: '',
-  quantity: '',
+function initialFields(vehicle?: Vehicle): Fields {
+  return {
+    make: vehicle?.make ?? '',
+    model: vehicle?.model ?? '',
+    category: vehicle?.category ?? '',
+    price: vehicle?.price ?? '',
+    quantity: vehicle ? String(vehicle.quantity) : '',
+  }
 }
 
 // Checked on the string itself (up to 2 decimal places, at least one non-zero digit), never as a float.
@@ -24,7 +27,8 @@ function isPositivePrice(value: string): boolean {
   return /^\d+(\.\d{1,2})?$/.test(value) && /[1-9]/.test(value)
 }
 
-function validate(fields: Record<FieldName, string>, withQuantity: boolean): Errors {
+// Quantity is only checked when adding: editing changes details, and stock moves via purchase/restock.
+function validate(fields: Fields, withQuantity: boolean): Errors {
   const errors: Errors = {}
   if (!fields.make.trim()) errors.make = 'Enter a make'
   if (!fields.model.trim()) errors.model = 'Enter a model'
@@ -39,17 +43,7 @@ function validate(fields: Record<FieldName, string>, withQuantity: boolean): Err
 export function VehicleFormModal({ vehicle, onSaved, onCancel }: VehicleFormModalProps) {
   const editing = vehicle !== undefined
   const title = editing ? 'Edit vehicle' : 'Add vehicle'
-  const [fields, setFields] = useState(() =>
-    vehicle
-      ? {
-          make: vehicle.make,
-          model: vehicle.model,
-          category: vehicle.category,
-          price: vehicle.price,
-          quantity: String(vehicle.quantity),
-        }
-      : EMPTY,
-  )
+  const [fields, setFields] = useState(() => initialFields(vehicle))
   const [errors, setErrors] = useState<Errors>({})
   const [saveError, setSaveError] = useState<string | null>(null)
 
