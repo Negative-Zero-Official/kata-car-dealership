@@ -13,5 +13,6 @@ class VehicleRepository:
         self.session.commit()
         return vehicle
 
-    def list_all(self) -> list[Vehicle]:
-        return list(self.session.scalars(select(Vehicle).order_by(Vehicle.id)))
+    def list_all(self, limit: int, offset: int) -> list[Vehicle]:
+        query = select(Vehicle).order_by(Vehicle.id).limit(limit).offset(offset)
+        return list(self.session.scalars(query))

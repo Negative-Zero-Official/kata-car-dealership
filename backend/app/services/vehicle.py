@@ -15,5 +15,5 @@ class VehicleService:
             Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
         )
 
-    def list_all(self) -> list[Vehicle]:
-        return self.vehicles.list_all()
+    def list_all(self, limit: int, offset: int) -> list[Vehicle]:
+        return self.vehicles.list_all(limit=limit, offset=offset)
