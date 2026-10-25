@@ -257,3 +257,19 @@ test('confirming a purchase buys the vehicle and shows a success toast', async (
   expect(screen.getByRole('status')).toHaveTextContent('Purchased Toyota Corolla')
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 })
+
+test('a search with no matches says nothing matches the filters, not that the inventory is empty', async () => {
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla, crv])),
+    http.get('/api/vehicles/search', () => HttpResponse.json([])),
+  )
+  renderDashboard()
+  await screen.findByRole('heading', { name: 'Honda CR-V' })
+  const user = userEvent.setup()
+
+  await user.type(screen.getByLabelText('Make'), 'zzz')
+  await user.click(screen.getByRole('button', { name: 'Search' }))
+
+  expect(await screen.findByText('No vehicles match these filters')).toBeInTheDocument()
+  expect(screen.queryByText('No vehicles yet')).not.toBeInTheDocument()
+})
