@@ -140,3 +140,60 @@ test('a valid submit POSTs the vehicle and its card appears', async () => {
     quantity: 3,
   })
 })
+
+function corollaCard() {
+  return within(screen.getByRole('heading', { name: 'Toyota Corolla' }).closest('li')!)
+}
+
+test('Edit is hidden from regular users', async () => {
+  signInAs('user')
+  await renderDashboard()
+
+  expect(corollaCard().queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+})
+
+test('Edit opens a form pre-filled with the vehicle details', async () => {
+  signInAs('admin')
+  await renderDashboard()
+
+  await userEvent.setup().click(corollaCard().getByRole('button', { name: 'Edit' }))
+
+  const form = within(screen.getByRole('form', { name: 'Edit vehicle' }))
+  expect(form.getByLabelText('Make')).toHaveValue('Toyota')
+  expect(form.getByLabelText('Model')).toHaveValue('Corolla')
+  expect(form.getByLabelText('Category')).toHaveValue('Sedan')
+  expect(form.getByLabelText('Price')).toHaveValue(25000)
+  expect(form.queryByLabelText('Quantity')).not.toBeInTheDocument()
+})
+
+test('Save sends a PUT with the edited details and the card updates', async () => {
+  let request: { id: string; body: unknown } | null = null
+  server.use(
+    http.put('/api/vehicles/:id', async ({ params, request: req }) => {
+      request = { id: params.id as string, body: await req.json() }
+      return HttpResponse.json({ ...corolla, model: 'Corolla Cross', price: '26000.00' })
+    }),
+  )
+  signInAs('admin')
+  await renderDashboard()
+  const user = userEvent.setup()
+  await user.click(corollaCard().getByRole('button', { name: 'Edit' }))
+  const form = within(screen.getByRole('form', { name: 'Edit vehicle' }))
+
+  await user.clear(form.getByLabelText('Model'))
+  await user.type(form.getByLabelText('Model'), 'Corolla Cross')
+  await user.clear(form.getByLabelText('Price'))
+  await user.type(form.getByLabelText('Price'), '26000')
+  await user.click(form.getByRole('button', { name: 'Save vehicle' }))
+
+  const card = within(
+    (await screen.findByRole('heading', { name: 'Toyota Corolla Cross' })).closest('li')!,
+  )
+  expect(card.getByText('$26,000.00')).toBeInTheDocument()
+  expect(card.getByText('5 in stock')).toBeInTheDocument()
+  expect(screen.queryByRole('form', { name: 'Edit vehicle' })).not.toBeInTheDocument()
+  expect(request).toEqual({
+    id: '1',
+    body: { make: 'Toyota', model: 'Corolla Cross', category: 'Sedan', price: '26000' },
+  })
+})
