@@ -40,3 +40,14 @@ def update_vehicle(
 ) -> VehicleRead:
     vehicle = service.update(vehicle_id, **payload.model_dump())
     return VehicleRead.model_validate(vehicle)
+
+
+@router.delete(
+    "/{vehicle_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_admin)],
+)
+def delete_vehicle(
+    vehicle_id: int, service: Annotated[VehicleService, Depends(get_vehicle_service)]
+) -> None:
+    service.delete(vehicle_id)

@@ -20,6 +20,10 @@ class VehicleRepository:
         self.session.commit()
         return vehicle
 
+    def delete(self, vehicle: Vehicle) -> None:
+        self.session.delete(vehicle)
+        self.session.commit()
+
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         query = select(Vehicle).order_by(Vehicle.id).limit(limit).offset(offset)
         return list(self.session.scalars(query))

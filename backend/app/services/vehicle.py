@@ -28,5 +28,11 @@ class VehicleService:
         vehicle.price = price
         return self.vehicles.save(vehicle)
 
+    def delete(self, vehicle_id: int) -> None:
+        vehicle = self.vehicles.get(vehicle_id)
+        if vehicle is None:
+            raise VehicleNotFound
+        self.vehicles.delete(vehicle)
+
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         return self.vehicles.list_all(limit=limit, offset=offset)
