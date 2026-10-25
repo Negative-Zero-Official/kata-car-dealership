@@ -386,3 +386,29 @@ def test_searching_by_partial_field_is_case_insensitive_and_excludes_others(
 
     assert response.status_code == 200
     assert response.json() == [_as_json(first), _as_json(second)]
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_prices"),
+    [
+        ("min_price=20000", ("20000.00", "30000.00")),
+        ("max_price=20000", ("10000.00", "20000.00")),
+        ("min_price=20000&max_price=20000", ("20000.00",)),
+    ],
+)
+def test_searching_by_price_range_is_inclusive(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+    query: str,
+    expected_prices: tuple[str, ...],
+) -> None:
+    user = make_user(email="alice@example.com")
+    for price in ("10000", "20000", "30000"):
+        make_vehicle(price=Decimal(price))
+
+    response = client.get(f"/api/vehicles/search?{query}", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert tuple(v["price"] for v in response.json()) == expected_prices
