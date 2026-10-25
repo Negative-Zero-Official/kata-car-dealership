@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router'
@@ -136,4 +136,73 @@ test('a 409 on purchase shows an error toast and leaves the stock unchanged', as
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Vehicle is out of stock')
   expect(card.getByText('5 in stock')).toBeInTheDocument()
+})
+
+test('submitting the filters searches with only the non-empty params', async () => {
+  let searchParams: Record<string, string> | null = null
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla, crv])),
+    http.get('/api/vehicles/search', ({ request }) => {
+      searchParams = Object.fromEntries(new URL(request.url).searchParams)
+      return HttpResponse.json([corolla])
+    }),
+  )
+  renderDashboard()
+  await screen.findByRole('heading', { name: 'Honda CR-V' })
+  const user = userEvent.setup()
+
+  await user.type(screen.getByLabelText('Make'), 'toyota')
+  await user.type(screen.getByLabelText('Max price'), '30000')
+  await user.click(screen.getByRole('button', { name: 'Search' }))
+
+  await waitFor(() =>
+    expect(screen.queryByRole('heading', { name: 'Honda CR-V' })).not.toBeInTheDocument(),
+  )
+  expect(screen.getByRole('heading', { name: 'Toyota Corolla' })).toBeInTheDocument()
+  expect(searchParams).toEqual({ make: 'toyota', max_price: '30000' })
+})
+
+test('Clear empties the filters and restores the full list', async () => {
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla, crv])),
+    http.get('/api/vehicles/search', () => HttpResponse.json([corolla])),
+  )
+  renderDashboard()
+  await screen.findByRole('heading', { name: 'Honda CR-V' })
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText('Make'), 'toyota')
+  await user.click(screen.getByRole('button', { name: 'Search' }))
+  await waitFor(() =>
+    expect(screen.queryByRole('heading', { name: 'Honda CR-V' })).not.toBeInTheDocument(),
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Clear' }))
+
+  expect(await screen.findByRole('heading', { name: 'Honda CR-V' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Toyota Corolla' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Make')).toHaveValue('')
+})
+
+test('a min price above the max price shows an inline error and sends no request', async () => {
+  let searched = false
+  server.use(
+    http.get('/api/vehicles', () => HttpResponse.json([corolla, crv])),
+    http.get('/api/vehicles/search', () => {
+      searched = true
+      return HttpResponse.json([])
+    }),
+  )
+  renderDashboard()
+  await screen.findByRole('heading', { name: 'Honda CR-V' })
+  const user = userEvent.setup()
+
+  await user.type(screen.getByLabelText('Min price'), '40000')
+  await user.type(screen.getByLabelText('Max price'), '30000')
+  await user.click(screen.getByRole('button', { name: 'Search' }))
+
+  expect(screen.getByLabelText('Max price')).toHaveAccessibleDescription(
+    'Max price must be at least the min price',
+  )
+  expect(searched).toBe(false)
+  expect(screen.getByRole('heading', { name: 'Honda CR-V' })).toBeInTheDocument()
 })
