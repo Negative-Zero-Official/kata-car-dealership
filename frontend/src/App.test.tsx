@@ -70,3 +70,34 @@ test('a wrong password on /login is not treated as an expired session', async ()
   expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password')
   expect(screen.queryByText(/Your session expired/)).not.toBeInTheDocument()
 })
+
+test('a signed-in user can log out, which clears the session and returns to /login', async () => {
+  localStorage.setItem(
+    SESSION_STORAGE_KEY,
+    JSON.stringify({ token: 'a.b.c', user: { id: 1, email: 'buyer@example.com', role: 'user' } }),
+  )
+  server.use(http.get('/api/vehicles', () => HttpResponse.json([])))
+  render(
+    <MemoryRouter initialEntries={['/']}>
+      <App />
+    </MemoryRouter>,
+  )
+  await screen.findByText('No vehicles yet')
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Log out' }))
+
+  expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
+  expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
+  expect(screen.queryByText(/Your session expired/)).not.toBeInTheDocument()
+})
+
+test('Log out is not shown while signed out', () => {
+  render(
+    <MemoryRouter initialEntries={['/login']}>
+      <App />
+    </MemoryRouter>,
+  )
+
+  expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
+})
