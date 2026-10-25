@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router'
@@ -196,4 +196,81 @@ test('Save sends a PUT with the edited details and the card updates', async () =
     id: '1',
     body: { make: 'Toyota', model: 'Corolla Cross', category: 'Sedan', price: '26000' },
   })
+})
+
+test('Delete and Restock are hidden from regular users', async () => {
+  signInAs('user')
+  await renderDashboard()
+
+  const card = corollaCard()
+  expect(card.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+  expect(card.queryByRole('button', { name: 'Restock' })).not.toBeInTheDocument()
+  expect(card.queryByLabelText('Restock quantity')).not.toBeInTheDocument()
+})
+
+test('Delete asks for confirmation in the page before sending anything', async () => {
+  let deleted = false
+  server.use(
+    http.delete('/api/vehicles/:id', () => {
+      deleted = true
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  signInAs('admin')
+  await renderDashboard()
+  const user = userEvent.setup()
+
+  await user.click(corollaCard().getByRole('button', { name: 'Delete' }))
+
+  const confirm = within(screen.getByRole('alertdialog', { name: 'Delete Toyota Corolla?' }))
+  expect(deleted).toBe(false)
+
+  await user.click(confirm.getByRole('button', { name: 'Cancel' }))
+
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Toyota Corolla' })).toBeInTheDocument()
+  expect(deleted).toBe(false)
+})
+
+test('confirming Delete sends a DELETE and removes the card', async () => {
+  let deletedId: string | null = null
+  server.use(
+    http.delete('/api/vehicles/:id', ({ params }) => {
+      deletedId = params.id as string
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  signInAs('admin')
+  await renderDashboard()
+  const user = userEvent.setup()
+
+  await user.click(corollaCard().getByRole('button', { name: 'Delete' }))
+  const confirm = within(screen.getByRole('alertdialog', { name: 'Delete Toyota Corolla?' }))
+  await user.click(confirm.getByRole('button', { name: 'Delete vehicle' }))
+
+  await waitFor(() =>
+    expect(screen.queryByRole('heading', { name: 'Toyota Corolla' })).not.toBeInTheDocument(),
+  )
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  expect(deletedId).toBe('1')
+})
+
+test('Restock sends the quantity and the card shows the new stock', async () => {
+  let request: { id: string; body: unknown } | null = null
+  server.use(
+    http.post('/api/vehicles/:id/restock', async ({ params, request: req }) => {
+      request = { id: params.id as string, body: await req.json() }
+      return HttpResponse.json({ ...corolla, quantity: 8 })
+    }),
+  )
+  signInAs('admin')
+  await renderDashboard()
+  const user = userEvent.setup()
+  const card = corollaCard()
+
+  await user.type(card.getByLabelText('Restock quantity'), '3')
+  await user.click(card.getByRole('button', { name: 'Restock' }))
+
+  expect(await card.findByText('8 in stock')).toBeInTheDocument()
+  expect(request).toEqual({ id: '1', body: { quantity: 3 } })
 })
