@@ -14,17 +14,10 @@ class VehicleService:
     def create(
         self, make: str, model: str, category: str, price: Decimal, quantity: int
     ) -> Vehicle:
-        return self.vehicles.add(
-            Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
-        )
+        return self.vehicles.add(_new_vehicle(make, model, category, price, quantity))
 
     def create_many(self, rows: Iterable[tuple[str, str, str, Decimal, int]]) -> list[Vehicle]:
-        return self.vehicles.add_all(
-            [
-                Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
-                for make, model, category, price, quantity in rows
-            ]
-        )
+        return self.vehicles.add_all([_new_vehicle(*row) for row in rows])
 
     def update(
         self, vehicle_id: int, make: str, model: str, category: str, price: Decimal
@@ -57,3 +50,7 @@ class VehicleService:
         if vehicle is None:
             raise VehicleNotFound
         return vehicle
+
+
+def _new_vehicle(make: str, model: str, category: str, price: Decimal, quantity: int) -> Vehicle:
+    return Vehicle(make=make, model=model, category=category, price=price, quantity=quantity)
