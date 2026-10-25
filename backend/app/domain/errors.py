@@ -20,3 +20,7 @@ class InvalidToken(DomainError):
 
 class AdminRequired(DomainError):
     detail = "Admin role required"
+
+
+class VehicleNotFound(DomainError):
+    detail = "Vehicle not found"

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.domain.errors import VehicleNotFound
 from app.models import Vehicle
 from app.repositories.vehicle import VehicleRepository
 
@@ -19,7 +20,8 @@ class VehicleService:
         self, vehicle_id: int, make: str, model: str, category: str, price: Decimal
     ) -> Vehicle:
         vehicle = self.vehicles.get(vehicle_id)
-        assert vehicle is not None
+        if vehicle is None:
+            raise VehicleNotFound
         vehicle.make = make
         vehicle.model = model
         vehicle.category = category
