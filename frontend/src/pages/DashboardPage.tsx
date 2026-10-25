@@ -46,6 +46,15 @@ function LoadingCards() {
   )
 }
 
+function EmptyState({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div className="panel border-dashed p-10 text-center">
+      <p className="font-display text-2xl font-semibold">{title}</p>
+      <p className="mt-1 text-muted">{hint}</p>
+    </div>
+  )
+}
+
 export function DashboardPage() {
   const { isAdmin } = useAuth()
   const [state, setState] = useState<State>({ status: 'loading' })
@@ -235,22 +244,22 @@ export function DashboardPage() {
             </div>
           )}
           {state.status === 'loaded' &&
-            (state.vehicles.length === 0 && state.filtered ? (
-              <div className="panel border-dashed p-10 text-center">
-                <p className="font-display text-2xl font-semibold">
-                  No vehicles match these filters
-                </p>
-                <p className="mt-1 text-muted">Try different filters, or clear them.</p>
-              </div>
-            ) : state.vehicles.length === 0 ? (
-              <div className="panel border-dashed p-10 text-center">
-                <p className="font-display text-2xl font-semibold">No vehicles yet</p>
-                <p className="mt-1 text-muted">
-                  {isAdmin
-                    ? 'Add a vehicle to start the inventory.'
-                    : 'Clear the filters or check back later.'}
-                </p>
-              </div>
+            (state.vehicles.length === 0 ? (
+              state.filtered ? (
+                <EmptyState
+                  title="No vehicles match these filters"
+                  hint="Try different filters, or clear them."
+                />
+              ) : (
+                <EmptyState
+                  title="No vehicles yet"
+                  hint={
+                    isAdmin
+                      ? 'Add a vehicle to start the inventory.'
+                      : 'Clear the filters or check back later.'
+                  }
+                />
+              )
             ) : (
               <ul className={CARD_GRID}>
                 {state.vehicles.map((vehicle) => (
