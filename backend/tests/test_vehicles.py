@@ -97,3 +97,45 @@ def test_adding_vehicle_with_invalid_payload_returns_422(
     response = client.post("/api/vehicles", json=payload, headers=auth_headers(admin))
 
     assert response.status_code == 422
+
+
+def test_listing_vehicles_returns_all_ordered_by_id_including_zero_stock(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    user = make_user(email="alice@example.com")
+    payloads = [
+        VEHICLE,
+        {**VEHICLE, "make": "Honda", "model": "Civic", "price": "22000.00", "quantity": 0},
+        {**VEHICLE, "make": "Ford", "model": "F-150", "category": "truck", "quantity": 2},
+    ]
+    created = [
+        client.post("/api/vehicles", json=payload, headers=auth_headers(admin)).json()
+        for payload in payloads
+    ]
+
+    response = client.get("/api/vehicles", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == sorted(created, key=lambda vehicle: vehicle["id"])
+
+
+def test_listing_vehicles_with_empty_db_returns_empty_list(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+
+    response = client.get("/api/vehicles", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_listing_vehicles_without_token_returns_401(client: TestClient) -> None:
+    response = client.get("/api/vehicles")
+
+    assert response.status_code == 401
