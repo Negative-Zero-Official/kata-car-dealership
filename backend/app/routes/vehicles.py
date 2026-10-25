@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
 
 from app.dependencies import (
     get_current_user,
@@ -86,8 +86,7 @@ def delete_vehicle(vehicle_id: int, service: VehicleServiceDep) -> None:
 def purchase_vehicle(
     vehicle_id: int,
     service: Annotated[InventoryService, Depends(get_inventory_service)],
-    request: PurchaseRequest | None = None,
+    request: Annotated[PurchaseRequest, Body(default_factory=PurchaseRequest)],
 ) -> VehicleRead:
-    quantity = request.quantity if request else PurchaseRequest().quantity
-    vehicle = service.purchase(vehicle_id, quantity)
+    vehicle = service.purchase(vehicle_id, request.quantity)
     return VehicleRead.model_validate(vehicle)
