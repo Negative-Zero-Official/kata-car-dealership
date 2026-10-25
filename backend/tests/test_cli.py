@@ -49,6 +49,24 @@ def test_create_admin_exits_1_when_admin_env_unset(
     assert "ADMIN_EMAIL and ADMIN_PASSWORD must be set" in err
 
 
+def test_create_admin_exits_0_and_reports_the_new_admin(
+    settings: Settings, session_factory: sessionmaker[Session], capsys: pytest.CaptureFixture[str]
+) -> None:
+    settings = settings.model_copy(
+        update={"ADMIN_EMAIL": "root@example.com", "ADMIN_PASSWORD": PASSWORD}
+    )
+
+    exit_code = cli.create_admin(settings)
+
+    out, _ = capsys.readouterr()
+    with session_factory() as session:
+        admin = session.scalar(select(User).where(User.email == "root@example.com"))
+    assert exit_code == 0
+    assert "Admin ready: root@example.com" in out
+    assert admin is not None
+    assert admin.role == "admin"
+
+
 def test_seed_demo_loads_demo_vehicles_with_some_out_of_stock(
     settings: Settings, session_factory: sessionmaker[Session]
 ) -> None:
