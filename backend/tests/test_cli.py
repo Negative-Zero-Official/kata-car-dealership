@@ -95,3 +95,33 @@ def test_seed_demo_skips_inventory_that_is_not_empty(
     assert exit_code == 0
     assert count == 1
     assert "skipping" in out
+
+
+@pytest.mark.parametrize("command", ["create-admin", "seed-demo"])
+def test_main_runs_the_named_command_with_app_settings(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch, command: str
+) -> None:
+    received: list[Settings] = []
+
+    def fake_command(given: Settings) -> int:
+        received.append(given)
+        return 7
+
+    monkeypatch.setattr(cli, "get_settings", lambda: settings)
+    monkeypatch.setitem(cli.COMMANDS, command, fake_command)
+
+    exit_code = cli.main([command])
+
+    assert exit_code == 7
+    assert received == [settings]
+
+
+def test_main_without_a_command_exits_with_usage_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as exit_info:
+        cli.main([])
+
+    _, err = capsys.readouterr()
+    assert exit_info.value.code == 2
+    assert "usage:" in err
