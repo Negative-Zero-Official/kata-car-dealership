@@ -22,7 +22,12 @@ class TokenService:
 
     def user_id(self, token: str) -> int:
         try:
-            payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
-        except jwt.InvalidTokenError as exc:
+            payload = jwt.decode(
+                token,
+                self.secret,
+                algorithms=[self.algorithm],
+                options={"require": ["exp", "sub"]},
+            )
+            return int(payload["sub"])
+        except (jwt.InvalidTokenError, ValueError) as exc:
             raise InvalidToken() from exc
-        return int(payload["sub"])
