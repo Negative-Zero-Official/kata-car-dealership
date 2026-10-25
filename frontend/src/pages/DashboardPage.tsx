@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { listVehicles, searchVehicles, type Vehicle, type VehicleFilter } from '../api/vehicles'
+import { useAuth } from '../auth/AuthContext'
 import { FilterBar } from '../components/FilterBar'
 import { VehicleCard } from '../components/VehicleCard'
+import { VehicleFormModal } from '../components/VehicleFormModal'
 
 type State =
   | { status: 'loading' }
@@ -9,10 +11,12 @@ type State =
   | { status: 'loaded'; vehicles: Vehicle[] }
 
 export function DashboardPage() {
+  const { isAdmin } = useAuth()
   const [state, setState] = useState<State>({ status: 'loading' })
   // Bumped by Retry to re-run the fetch effect.
   const [attempt, setAttempt] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     let current = true
@@ -51,9 +55,29 @@ export function DashboardPage() {
     )
   }
 
+  function addVehicle(created: Vehicle) {
+    setAdding(false)
+    setState((current) =>
+      current.status === 'loaded'
+        ? { status: 'loaded', vehicles: [...current.vehicles, created] }
+        : current,
+    )
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <h2 className="mb-6 text-2xl font-semibold">Vehicles</h2>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Vehicles</h2>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="rounded bg-blue-700 px-4 py-2 text-white"
+          >
+            Add vehicle
+          </button>
+        )}
+      </div>
       <FilterBar onSearch={search} onClear={retry} />
       {state.status === 'loading' && <p role="status">Loading vehicles…</p>}
       {state.status === 'error' && (
@@ -79,6 +103,7 @@ export function DashboardPage() {
             ))}
           </ul>
         ))}
+      {adding && <VehicleFormModal onSaved={addVehicle} onCancel={() => setAdding(false)} />}
       {toast && (
         <p
           role="alert"
