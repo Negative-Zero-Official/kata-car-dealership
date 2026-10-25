@@ -11,6 +11,7 @@ export function DashboardPage() {
   const [state, setState] = useState<State>({ status: 'loading' })
   // Bumped by Retry to re-run the fetch effect.
   const [attempt, setAttempt] = useState(0)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     let current = true
@@ -26,6 +27,18 @@ export function DashboardPage() {
   function retry() {
     setState({ status: 'loading' })
     setAttempt((n) => n + 1)
+  }
+
+  function replaceVehicle(updated: Vehicle) {
+    setToast(null)
+    setState((current) =>
+      current.status === 'loaded'
+        ? {
+            status: 'loaded',
+            vehicles: current.vehicles.map((v) => (v.id === updated.id ? updated : v)),
+          }
+        : current,
+    )
   }
 
   return (
@@ -46,10 +59,23 @@ export function DashboardPage() {
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {state.vehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              <VehicleCard
+                key={vehicle.id}
+                vehicle={vehicle}
+                onPurchased={replaceVehicle}
+                onPurchaseError={setToast}
+              />
             ))}
           </ul>
         ))}
+      {toast && (
+        <p
+          role="alert"
+          className="fixed right-4 bottom-4 rounded bg-red-700 px-4 py-3 text-white shadow"
+        >
+          {toast}
+        </p>
+      )}
     </main>
   )
 }
