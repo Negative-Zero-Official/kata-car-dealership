@@ -1,5 +1,9 @@
 import argparse
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
+
+from sqlalchemy.orm import Session
 
 from app import models  # noqa: F401  registers tables on Base.metadata
 from app.core.config import Settings, get_settings
@@ -14,41 +18,41 @@ from app.services.token import TokenService
 from app.services.vehicle import VehicleService
 
 
+@contextmanager
+def open_session(settings: Settings) -> Iterator[Session]:
+    engine = make_engine(settings.DATABASE_URL)
+    try:
+        Base.metadata.create_all(engine)
+        with make_session_factory(engine)() as session:
+            yield session
+    finally:
+        engine.dispose()
+
+
 def create_admin(settings: Settings) -> int:
     if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
         print("ADMIN_EMAIL and ADMIN_PASSWORD must be set", file=sys.stderr)
         return 1
-    engine = make_engine(settings.DATABASE_URL)
+    tokens = TokenService(settings.JWT_SECRET, settings.JWT_ALGORITHM, settings.JWT_EXPIRE_MINUTES)
     try:
-        Base.metadata.create_all(engine)
-        tokens = TokenService(
-            settings.JWT_SECRET, settings.JWT_ALGORITHM, settings.JWT_EXPIRE_MINUTES
-        )
-        with make_session_factory(engine)() as session:
+        with open_session(settings) as session:
             auth = AuthService(UserRepository(session), PasswordHasher(), tokens)
             admin = auth.create_admin(settings.ADMIN_EMAIL, settings.ADMIN_PASSWORD)
     except EmailBelongsToNonAdmin as error:
         print(f"{settings.ADMIN_EMAIL}: {error.detail}", file=sys.stderr)
         return 1
-    finally:
-        engine.dispose()
     print(f"Admin ready: {admin.email}")
     return 0
 
 
 def seed_demo(settings: Settings) -> int:
-    engine = make_engine(settings.DATABASE_URL)
-    try:
-        Base.metadata.create_all(engine)
-        with make_session_factory(engine)() as session:
-            vehicles = VehicleService(VehicleRepository(session))
-            # Only seed an empty inventory, so re-running never duplicates or overwrites stock.
-            if vehicles.list_all(limit=1, offset=0):
-                print("Inventory is not empty; skipping demo seed")
-                return 0
-            vehicles.create_many(DEMO_VEHICLES)
-    finally:
-        engine.dispose()
+    with open_session(settings) as session:
+        vehicles = VehicleService(VehicleRepository(session))
+        # Only seed an empty inventory, so re-running never duplicates or overwrites stock.
+        if vehicles.list_all(limit=1, offset=0):
+            print("Inventory is not empty; skipping demo seed")
+            return 0
+        vehicles.create_many(DEMO_VEHICLES)
     print(f"Seeded {len(DEMO_VEHICLES)} demo vehicles")
     return 0
 
