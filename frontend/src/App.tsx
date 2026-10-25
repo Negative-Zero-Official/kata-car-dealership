@@ -1,5 +1,6 @@
 import { Link, Route, Routes } from 'react-router'
 import { AuthProvider, useAuth } from './auth/AuthContext'
+import { GuestRoute } from './auth/GuestRoute'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
@@ -36,8 +37,10 @@ function App() {
     <AuthProvider>
       <AppHeader />
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<DashboardPage />} />
         </Route>
