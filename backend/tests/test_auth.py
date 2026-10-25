@@ -8,6 +8,7 @@ from pwdlib import PasswordHash
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
+from app.core.security import PasswordHasher
 from app.models import User
 from app.repositories.user import UserRepository
 from tests.factories import PASSWORD
@@ -164,3 +165,24 @@ def test_login_rejects_invalid_credentials_with_401_and_generic_detail(
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Invalid email or password"}
+
+
+def test_login_with_unknown_email_still_verifies_a_password_hash(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Skipping the slow hash check for unknown emails would let response times reveal accounts.
+    verified: list[str] = []
+    real_verify = PasswordHasher.verify
+
+    def spy(self: PasswordHasher, password: str, hashed: str) -> bool:
+        verified.append(password)
+        return real_verify(self, password, hashed)
+
+    monkeypatch.setattr(PasswordHasher, "verify", spy)
+
+    response = client.post(
+        "/api/auth/login", json={"email": "nobody@example.com", "password": PASSWORD}
+    )
+
+    assert response.status_code == 401
+    assert verified == [PASSWORD]
