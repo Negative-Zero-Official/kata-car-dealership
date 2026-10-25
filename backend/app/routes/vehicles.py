@@ -3,9 +3,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.dependencies import get_current_user, get_vehicle_service, require_admin
+from app.dependencies import (
+    get_current_user,
+    get_inventory_service,
+    get_vehicle_service,
+    require_admin,
+)
 from app.domain.vehicle_filter import VehicleFilter
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
+from app.services.inventory import InventoryService
 from app.services.vehicle import VehicleService
 
 router = APIRouter(prefix="/vehicles")
@@ -72,3 +78,14 @@ def update_vehicle(
 )
 def delete_vehicle(vehicle_id: int, service: VehicleServiceDep) -> None:
     service.delete(vehicle_id)
+
+
+@router.post(
+    "/{vehicle_id}/purchase", response_model=VehicleRead, dependencies=[Depends(get_current_user)]
+)
+def purchase_vehicle(
+    vehicle_id: int,
+    service: Annotated[InventoryService, Depends(get_inventory_service)],
+) -> VehicleRead:
+    vehicle = service.purchase(vehicle_id)
+    return VehicleRead.model_validate(vehicle)
