@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/*
+  Showroom-floor palette: cool paper, slate ink, a showroom blue for actions,
+  and the yellow of a dealer's price tag for stock. Barlow is a road-signage
+  family; its condensed cut sets models and prices like a window sticker.
+*/
+@theme {
+  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", ui-sans-serif, sans-serif;
+
+  --color-paper: #f3f5f7;
+  --color-ink: #1c2430;
+  --color-muted: #566170;
+  --color-line: #d3d9e0;
+  --color-showroom: #1f4e8c;
+  --color-showroom-deep: #163a69;
+  --color-tag: #f2c230;
+  --color-sold: #b3261e;
+}
+
+@layer base {
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-showroom);
+    outline-offset: 2px;
+  }
+
+  /* On the slate header and toasts a blue ring disappears; use the tag yellow there. */
+  .on-ink :focus-visible {
+    outline-color: var(--color-tag);
+  }
+}
+
+@utility btn {
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded px-4 text-sm font-semibold
+    transition-colors disabled:cursor-not-allowed;
+}
+
+@utility btn-primary {
+  @apply btn bg-showroom text-white hover:bg-showroom-deep disabled:bg-line disabled:text-muted;
+}
+
+@utility btn-secondary {
+  @apply btn border border-line bg-white text-ink hover:border-ink;
+}
+
+@utility btn-danger {
+  @apply btn bg-sold text-white hover:bg-[#8f1e18];
+}
+
+@utility btn-quiet {
+  @apply btn px-2 text-showroom hover:bg-showroom/10;
+}
+
+@utility field {
+  @apply flex flex-col gap-1 text-sm font-medium;
+}
+
+@utility input {
+  @apply min-h-10 rounded border border-line bg-white px-3 text-base font-normal text-ink
+    placeholder:text-muted/70 aria-invalid:border-sold;
+}
+
+@utility field-error {
+  @apply text-sm text-sold;
+}
+
+@utility panel {
+  @apply rounded-md border border-line bg-white;
+}
+
+/* A dealer's price tag: square on the right, a notched point on the left with a punched hole. */
+@utility hang-tag {
+  @apply relative py-1 pr-3 pl-5 text-sm font-semibold whitespace-nowrap;
+  clip-path: polygon(0.6rem 0, 100% 0, 100% 100%, 0.6rem 100%, 0 50%);
+
+  &::before {
+    content: "";
+    @apply absolute top-1/2 left-2 size-1.5 -translate-y-1/2 rounded-full bg-white;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
