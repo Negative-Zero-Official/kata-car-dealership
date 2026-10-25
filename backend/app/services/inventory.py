@@ -17,8 +17,8 @@ class InventoryService:
         return vehicle
 
     def restock(self, vehicle_id: int, quantity: int) -> Vehicle:
-        if not self.vehicles.increment(vehicle_id, quantity):
-            raise VehicleNotFound
+        self.vehicles.increment(vehicle_id, quantity)
         vehicle = self.vehicles.get(vehicle_id)
-        assert vehicle is not None
+        if vehicle is None:
+            raise VehicleNotFound
         return vehicle
