@@ -201,3 +201,19 @@ def test_login_with_unknown_email_still_verifies_a_password_hash(
 
     assert response.status_code == 401
     assert verified == [PASSWORD]
+
+
+def test_login_rejects_password_longer_than_registration_allows_with_422(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Hashing an unbounded password on every login attempt is a cheap way to burn server CPU.
+    def fail_verify(self: PasswordHasher, password: str, hashed: str) -> bool:
+        raise AssertionError("password should be rejected before hashing")
+
+    monkeypatch.setattr(PasswordHasher, "verify", fail_verify)
+
+    response = client.post(
+        "/api/auth/login", json={"email": "alice@example.com", "password": "x" * 129}
+    )
+
+    assert response.status_code == 422
