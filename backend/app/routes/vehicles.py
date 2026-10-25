@@ -23,18 +23,23 @@ def list_vehicles(
     return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
 
 
-@router.get("/search", response_model=list[VehicleRead], dependencies=[Depends(get_current_user)])
-def search_vehicles(
-    service: VehicleServiceDep,
+def search_filter(
     make: str | None = None,
     model: str | None = None,
     category: str | None = None,
     min_price: Annotated[Decimal | None, Query(ge=0)] = None,
     max_price: Annotated[Decimal | None, Query(ge=0)] = None,
-) -> list[VehicleRead]:
-    criteria = VehicleFilter(
+) -> VehicleFilter:
+    return VehicleFilter(
         make=make, model=model, category=category, min_price=min_price, max_price=max_price
     )
+
+
+@router.get("/search", response_model=list[VehicleRead], dependencies=[Depends(get_current_user)])
+def search_vehicles(
+    service: VehicleServiceDep,
+    criteria: Annotated[VehicleFilter, Depends(search_filter)],
+) -> list[VehicleRead]:
     vehicles = service.search(criteria)
     return [VehicleRead.model_validate(vehicle) for vehicle in vehicles]
 
