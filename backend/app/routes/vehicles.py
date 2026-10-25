@@ -29,8 +29,8 @@ def search_vehicles(
     make: str | None = None,
     model: str | None = None,
     category: str | None = None,
-    min_price: Decimal | None = None,
-    max_price: Decimal | None = None,
+    min_price: Annotated[Decimal | None, Query(ge=0)] = None,
+    max_price: Annotated[Decimal | None, Query(ge=0)] = None,
 ) -> list[VehicleRead]:
     criteria = VehicleFilter(
         make=make, model=model, category=category, min_price=min_price, max_price=max_price

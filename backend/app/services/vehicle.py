@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from app.domain.errors import VehicleNotFound
+from app.domain.errors import InvalidPriceRange, VehicleNotFound
 from app.domain.vehicle_filter import VehicleFilter
 from app.models import Vehicle
 from app.repositories.vehicle import VehicleRepository
@@ -35,6 +35,12 @@ class VehicleService:
         return self.vehicles.list_all(limit=limit, offset=offset)
 
     def search(self, criteria: VehicleFilter) -> list[Vehicle]:
+        if (
+            criteria.min_price is not None
+            and criteria.max_price is not None
+            and criteria.min_price > criteria.max_price
+        ):
+            raise InvalidPriceRange
         return self.vehicles.search(criteria)
 
     def _get(self, vehicle_id: int) -> Vehicle:
