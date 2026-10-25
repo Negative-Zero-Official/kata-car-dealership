@@ -1,0 +1,65 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: C:\Users\pgait\Documents\Coding Projects and Repos\Incubyte Recruitment\kata-car-dealership\backend
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, cov-7.1.0
+collected 139 items
+
+tests\test_auth.py ..................                                    [ 12%]
+tests\test_cli.py ...........                                            [ 20%]
+tests\test_config.py ..                                                  [ 22%]
+tests\test_cors.py ..                                                    [ 23%]
+tests\test_current_user.py .........                                     [ 30%]
+tests\test_db.py .                                                       [ 30%]
+tests\test_health.py .                                                   [ 31%]
+tests\test_inventory.py ................                                 [ 43%]
+tests\test_main.py .                                                     [ 43%]
+tests\test_require_admin.py ..                                           [ 45%]
+tests\test_seed_admin.py .....                                           [ 48%]
+tests\test_vehicle_repository.py ...                                     [ 51%]
+tests\test_vehicles.py ................................................. [ 86%]
+...................                                                      [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.14.3-final-0 _______________
+
+Name                           Stmts   Miss  Cover   Missing
+------------------------------------------------------------
+app\__init__.py                    0      0   100%
+app\cli.py                        55      0   100%
+app\core\__init__.py               0      0   100%
+app\core\config.py                15      0   100%
+app\core\security.py               8      0   100%
+app\db.py                         14      0   100%
+app\demo_data.py                   4      0   100%
+app\dependencies.py               36      0   100%
+app\domain\__init__.py             0      0   100%
+app\domain\errors.py              18      0   100%
+app\domain\roles.py                4      0   100%
+app\domain\vehicle_filter.py       9      0   100%
+app\exception_handlers.py         10      0   100%
+app\factory.py                    26      0   100%
+app\main.py                        2      0   100%
+app\models\__init__.py             3      0   100%
+app\models\user.py                 9      0   100%
+app\models\vehicle.py             11      0   100%
+app\repositories\__init__.py       0      0   100%
+app\repositories\user.py          20      0   100%
+app\repositories\vehicle.py       48      0   100%
+app\routes\__init__.py             0      0   100%
+app\routes\auth.py                14      0   100%
+app\routes\health.py               5      0   100%
+app\routes\vehicles.py            39      0   100%
+app\schemas\__init__.py            0      0   100%
+app\schemas\auth.py               10      0   100%
+app\schemas\money.py               4      0   100%
+app\schemas\vehicle.py            15      0   100%
+app\services\__init__.py           0      0   100%
+app\services\auth.py              33      0   100%
+app\services\inventory.py         20      0   100%
+app\services\token.py             18      0   100%
+app\services\vehicle.py           38      0   100%
+------------------------------------------------------------
+TOTAL                            488      0   100%
+============================ 139 passed in 10.17s =============================
