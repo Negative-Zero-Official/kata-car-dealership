@@ -463,3 +463,32 @@ def test_searching_with_no_match_returns_empty_list(
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        pytest.param("min_price=30000&max_price=20000", id="min-above-max"),
+        pytest.param("min_price=-1", id="negative-min"),
+        pytest.param("max_price=-1", id="negative-max"),
+        pytest.param("min_price=abc", id="non-numeric-min"),
+        pytest.param("max_price=abc", id="non-numeric-max"),
+    ],
+)
+def test_searching_with_invalid_price_parameters_returns_422(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+    query: str,
+) -> None:
+    user = make_user(email="alice@example.com")
+
+    response = client.get(f"/api/vehicles/search?{query}", headers=auth_headers(user))
+
+    assert response.status_code == 422
+
+
+def test_searching_without_token_returns_401(client: TestClient) -> None:
+    response = client.get("/api/vehicles/search")
+
+    assert response.status_code == 401
