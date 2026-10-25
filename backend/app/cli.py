@@ -30,6 +30,7 @@ def open_session(settings: Settings) -> Iterator[Session]:
 
 
 def create_admin(settings: Settings) -> int:
+    """create the admin from ADMIN_EMAIL / ADMIN_PASSWORD"""
     if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
         print("ADMIN_EMAIL and ADMIN_PASSWORD must be set", file=sys.stderr)
         return 1
@@ -46,6 +47,7 @@ def create_admin(settings: Settings) -> int:
 
 
 def seed_demo(settings: Settings) -> int:
+    """load demo vehicles into an empty inventory"""
     with open_session(settings) as session:
         vehicles = VehicleService(VehicleRepository(session))
         # Only seed an empty inventory, so re-running never duplicates or overwrites stock.
@@ -63,8 +65,8 @@ COMMANDS = {"create-admin": create_admin, "seed-demo": seed_demo}
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("create-admin", help="create the admin from ADMIN_EMAIL / ADMIN_PASSWORD")
-    commands.add_parser("seed-demo", help="load demo vehicles into an empty inventory")
+    for name, command in COMMANDS.items():
+        commands.add_parser(name, help=command.__doc__)
     args = parser.parse_args(argv)
     return COMMANDS[args.command](get_settings())
 
