@@ -358,3 +358,31 @@ def test_searching_by_partial_make_is_case_insensitive_and_excludes_others(
 
     assert response.status_code == 200
     assert response.json() == [_as_json(corolla), _as_json(camry)]
+
+
+@pytest.mark.parametrize(
+    ("field", "query", "matching", "other"),
+    [
+        ("model", "cor", ("Corolla", "COROLLA Cross"), "Camry"),
+        ("category", "suv", ("SUV", "compact suv"), "sedan"),
+    ],
+)
+def test_searching_by_partial_field_is_case_insensitive_and_excludes_others(
+    client: TestClient,
+    make_user: Callable[..., User],
+    make_vehicle: Callable[..., Vehicle],
+    auth_headers: Callable[[User], dict[str, str]],
+    field: str,
+    query: str,
+    matching: tuple[str, str],
+    other: str,
+) -> None:
+    user = make_user(email="alice@example.com")
+    first = make_vehicle(**{field: matching[0]})
+    second = make_vehicle(**{field: matching[1]})
+    make_vehicle(**{field: other})
+
+    response = client.get(f"/api/vehicles/search?{field}={query}", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == [_as_json(first), _as_json(second)]
