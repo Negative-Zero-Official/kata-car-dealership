@@ -139,3 +139,35 @@ def test_listing_vehicles_without_token_returns_401(client: TestClient) -> None:
     response = client.get("/api/vehicles")
 
     assert response.status_code == 401
+
+
+def test_listing_vehicles_with_limit_and_offset_returns_that_page(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    admin = make_user(email="root@example.com", role="admin")
+    user = make_user(email="alice@example.com")
+    created = [
+        client.post(
+            "/api/vehicles", json={**VEHICLE, "model": f"Model {n}"}, headers=auth_headers(admin)
+        ).json()
+        for n in range(1, 6)
+    ]
+
+    response = client.get("/api/vehicles?limit=2&offset=2", headers=auth_headers(user))
+
+    assert response.status_code == 200
+    assert response.json() == created[2:4]
+
+
+def test_listing_vehicles_with_limit_over_100_returns_422(
+    client: TestClient,
+    make_user: Callable[..., User],
+    auth_headers: Callable[[User], dict[str, str]],
+) -> None:
+    user = make_user(email="alice@example.com")
+
+    response = client.get("/api/vehicles?limit=101", headers=auth_headers(user))
+
+    assert response.status_code == 422
