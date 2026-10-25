@@ -57,11 +57,11 @@ class VehicleRepository:
     def search(self, criteria: VehicleFilter) -> list[Vehicle]:
         query = select(Vehicle).order_by(Vehicle.id)
         if criteria.make is not None:
-            query = query.where(Vehicle.make.ilike(f"%{criteria.make}%"))
+            query = query.where(Vehicle.make.icontains(criteria.make, autoescape=True))
         if criteria.model is not None:
-            query = query.where(Vehicle.model.ilike(f"%{criteria.model}%"))
+            query = query.where(Vehicle.model.icontains(criteria.model, autoescape=True))
         if criteria.category is not None:
-            query = query.where(Vehicle.category.ilike(f"%{criteria.category}%"))
+            query = query.where(Vehicle.category.icontains(criteria.category, autoescape=True))
         if criteria.min_price is not None:
             query = query.where(Vehicle.price >= criteria.min_price)
         if criteria.max_price is not None:
