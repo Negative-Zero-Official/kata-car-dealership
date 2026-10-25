@@ -34,3 +34,7 @@ class VehicleRead(VehicleBase):
 
 class PurchaseRequest(BaseModel):
     quantity: Annotated[int, Field(gt=0)] = 1
+
+
+class RestockRequest(BaseModel):
+    quantity: Annotated[int, Field(gt=0)]

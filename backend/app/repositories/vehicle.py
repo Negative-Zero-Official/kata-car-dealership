@@ -31,6 +31,15 @@ class VehicleRepository:
         self.session.commit()
         return result.rowcount == 1
 
+    def increment(self, vehicle_id: int, amount: int) -> bool:
+        result = self.session.execute(
+            update(Vehicle)
+            .where(Vehicle.id == vehicle_id)
+            .values(quantity=Vehicle.quantity + amount)
+        )
+        self.session.commit()
+        return result.rowcount == 1
+
     def delete(self, vehicle: Vehicle) -> None:
         self.session.delete(vehicle)
         self.session.commit()

@@ -10,7 +10,13 @@ from app.dependencies import (
     require_admin,
 )
 from app.domain.vehicle_filter import VehicleFilter
-from app.schemas.vehicle import PurchaseRequest, VehicleCreate, VehicleRead, VehicleUpdate
+from app.schemas.vehicle import (
+    PurchaseRequest,
+    RestockRequest,
+    VehicleCreate,
+    VehicleRead,
+    VehicleUpdate,
+)
 from app.services.inventory import InventoryService
 from app.services.vehicle import VehicleService
 
@@ -89,4 +95,16 @@ def purchase_vehicle(
     request: Annotated[PurchaseRequest, Body(default_factory=PurchaseRequest)],
 ) -> VehicleRead:
     vehicle = service.purchase(vehicle_id, request.quantity)
+    return VehicleRead.model_validate(vehicle)
+
+
+@router.post(
+    "/{vehicle_id}/restock", response_model=VehicleRead, dependencies=[Depends(require_admin)]
+)
+def restock_vehicle(
+    vehicle_id: int,
+    request: RestockRequest,
+    service: Annotated[InventoryService, Depends(get_inventory_service)],
+) -> VehicleRead:
+    vehicle = service.restock(vehicle_id, request.quantity)
     return VehicleRead.model_validate(vehicle)
