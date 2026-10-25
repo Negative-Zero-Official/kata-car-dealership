@@ -19,9 +19,7 @@ class VehicleService:
     def update(
         self, vehicle_id: int, make: str, model: str, category: str, price: Decimal
     ) -> Vehicle:
-        vehicle = self.vehicles.get(vehicle_id)
-        if vehicle is None:
-            raise VehicleNotFound
+        vehicle = self._get(vehicle_id)
         vehicle.make = make
         vehicle.model = model
         vehicle.category = category
@@ -29,10 +27,14 @@ class VehicleService:
         return self.vehicles.save(vehicle)
 
     def delete(self, vehicle_id: int) -> None:
-        vehicle = self.vehicles.get(vehicle_id)
-        if vehicle is None:
-            raise VehicleNotFound
+        vehicle = self._get(vehicle_id)
         self.vehicles.delete(vehicle)
 
     def list_all(self, limit: int, offset: int) -> list[Vehicle]:
         return self.vehicles.list_all(limit=limit, offset=offset)
+
+    def _get(self, vehicle_id: int) -> Vehicle:
+        vehicle = self.vehicles.get(vehicle_id)
+        if vehicle is None:
+            raise VehicleNotFound
+        return vehicle
