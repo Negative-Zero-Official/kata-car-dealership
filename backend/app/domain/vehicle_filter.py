@@ -9,3 +9,4 @@ class VehicleFilter:
     category: str | None = None
     min_price: Decimal | None = None
     max_price: Decimal | None = None
+    quantity: int | None = None

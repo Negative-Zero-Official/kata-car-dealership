@@ -69,4 +69,6 @@ class VehicleRepository:
             query = query.where(Vehicle.price >= criteria.min_price)
         if criteria.max_price is not None:
             query = query.where(Vehicle.price <= criteria.max_price)
+        if criteria.quantity is not None:
+            query = query.where(Vehicle.quantity == criteria.quantity)
         return list(self.session.scalars(query))
