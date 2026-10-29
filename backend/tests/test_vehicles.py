@@ -551,18 +551,19 @@ def test_searching_without_token_returns_401(client: TestClient) -> None:
 
     assert response.status_code == 401
 
+
 def test_searching_by_quantity_returns_only_exact_matches(
     client: TestClient,
     make_user: Callable[..., User],
     make_vehicle: Callable[..., Vehicle],
-    auth_headers: Callable[[User], dict[str, str]]
+    auth_headers: Callable[[User], dict[str, str]],
 ) -> None:
     user = make_user(email="alice@example.com")
     match = make_vehicle(make="Toyota", quantity=2)
     make_vehicle(make="Honda", quantity=3)
     make_vehicle(make="Ford", quantity=4)
-    
+
     response = client.get("api/vehicles/search?quantity=2", headers=auth_headers(user))
-    
+
     assert response.status_code == 200
     assert response.json() == [_as_json(match)]

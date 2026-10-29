@@ -41,10 +41,15 @@ def search_filter(
     category: str | None = None,
     min_price: Annotated[Decimal | None, Query(ge=0)] = None,
     max_price: Annotated[Decimal | None, Query(ge=0)] = None,
-    quantity: Annotated[int | None, Query(ge=0)] = None
+    quantity: Annotated[int | None, Query(ge=0)] = None,
 ) -> VehicleFilter:
     return VehicleFilter(
-        make=make, model=model, category=category, min_price=min_price, max_price=max_price, quantity=quantity
+        make=make,
+        model=model,
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        quantity=quantity,
     )
 
 
